@@ -1,0 +1,6 @@
+[package]
+name = "cc1101"
+version = "0.0.1"
+authors = ["Ferdia McKeogh <chocol4te@users.noreply.github.com>"]
+
+[dependencies]
