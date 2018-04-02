@@ -2,6 +2,9 @@
 
 > A platform agnostic driver to interface with the CC1101 (Sub-1GHz RF Transceiver)
 
+
+[![Build Status](https://travis-ci.org/chocol4te/cc1101.svg?branch=master)](https://travis-ci.org/chocol4te/cc1101)
+
 ## What works
 
 - Nothing :(
