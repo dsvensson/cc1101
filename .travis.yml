@@ -3,27 +3,27 @@ language: rust
 matrix:
   include:
     - env: TARGET_BUILD=thumbv6m-none-eabi
+      rust: nightly
     - env: TARGET_BUILD=thumbv7em-none-eabi
+      rust: nightly
     - env: TARGET_BUILD=thumbv7em-none-eabihf
+      rust: nightly
     - env: TARGET_BUILD=thumbv7m-none-eabi
-    - env: TARGET_BUILD=arm-unknown-linux-gnueabihf
+      rust: nightly
+    - env: TARGET_BUILD=armv7-unknown-linux-gnueabihf
+      rust: nightly
     - env: TARGET_BUILD=x86_64-unknown-linux-gnu
+      rust: nightly
 
-before_install:
-  - set -e
-  - rustup self update
-  - sudo apt-get update -qq
+before_install: set -e
 
 install:
-  - rustup override set nightly
-  - rustup component add rust-src
-  - rustup target add arm-unknown-linux-gnueabi
-  - rustup target add armv7-unknown-linux-gnueabihf
-  - source ~/.cargo/env || true
+  - bash ci/install.sh
 
 script:
-  - cargo build --target $TARGET_BUILD
-  - cargo build --target $TARGET_BUILD --release
+  - bash ci/script.sh
+
+after_script: set +e
 
 #after_success:
 #  - bash ci/after_success.sh
