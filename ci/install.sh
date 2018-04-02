@@ -1,7 +1,7 @@
 set -euxo pipefail
 
 main() {
-    if [ $TARGET = thumbv7m-none-eabi ]; then
+    if [ $BUILD_TARGET = thumbv7m-none-eabi ]; then
         # This fetches latest stable release of Xargo
         local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/xargo \
                         | cut -d/ -f3 \
