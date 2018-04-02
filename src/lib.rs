@@ -12,42 +12,41 @@ use hal::digital::OutputPin;
 pub struct Cc1101<SPI, CS> {
     spi: SPI,
     cs: CS,
-//    gdo0: GDO0,
-//    gdo2: GDO2,
+    //    gdo0: GDO0,
+    //    gdo2: GDO2,
 }
 
 impl<SPI, CS, E> Cc1101<SPI, CS>
-    where
-        SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
-        CS: OutputPin,
-    {
-        pub fn new(spi: SPI, cs: CS) -> Result<Self, E> {
-            let cc1101 = Cc1101 { spi: spi, cs: cs };
+where
+    SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
+    CS: OutputPin,
+{
+    pub fn new(spi: SPI, cs: CS) -> Result<Self, E> {
+        let cc1101 = Cc1101 { spi: spi, cs: cs };
 
-            Ok(cc1101)
-        }
-
-        fn read_register(&mut self, reg: Register) -> Result<u8, E> {
-            Ok(0)
-        }
-
-        fn read_burst() -> Result<u8, E> {
-            Ok(0)
-        }
-
-        fn write_strobe(&mut self, byte: u8) -> Result<(), E> {
-            Ok(())
-        }
-
-        fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), E> {
-            Ok(())
-        }
-
-        fn write_burst() -> Result<(), E> {
-            Ok(())
-        }
+        Ok(cc1101)
     }
 
+    fn read_register(&mut self, reg: Register) -> Result<u8, E> {
+        Ok(0)
+    }
+
+    fn read_burst() -> Result<u8, E> {
+        Ok(0)
+    }
+
+    fn write_strobe(&mut self, byte: u8) -> Result<(), E> {
+        Ok(())
+    }
+
+    fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), E> {
+        Ok(())
+    }
+
+    fn write_burst() -> Result<(), E> {
+        Ok(())
+    }
+}
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
