@@ -28,23 +28,81 @@ where
     }
 
     fn read_register(&mut self, reg: Register) -> Result<u8, E> {
-        Ok(0)
+        self.cs.set_low();
+
+        let mut buffer = [reg.addr() | READ_SINGLE_BYTE, 0];
+        self.spi.transfer(&mut buffer)?;
+
+        self.cs.set_high();
+
+        Ok(buffer[1])
     }
 
-    fn read_burst() -> Result<u8, E> {
-        Ok(0)
+    fn read_burst(&mut self, com: Command, mut buf: &mut [u8]) -> Result<(), E> {
+        self.cs.set_low();
+        /*
+        let mut rx_buf: [u8; buf.len()] = [0; buf.len()+1];
+        rx_buf[0] = com.addr() | READ_BURST;
+
+        self.spi.transfer(&mut rx_buf)?;
+
+        for i in 1..buf.len()+1 {
+            buf[i-1] = rx_buf[i];
+        }
+        */
+
+        // Hopefully the same as transferring an array that starts with the command followed by buf
+        self.spi.write(&[com.addr() | READ_BURST]);
+        self.spi.transfer(&mut buf)?;
+
+        self.cs.set_high();
+
+        Ok(())
     }
 
-    fn write_strobe(&mut self, byte: u8) -> Result<(), E> {
+    fn write_strobe(&mut self, com: Command) -> Result<(), E> {
+        self.cs.set_low();
+
+        self.spi.write(&[com.addr()])?;
+
+        self.cs.set_high();
+
         Ok(())
     }
 
     fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), E> {
+        self.cs.set_low();
+
+        let mut buffer = [reg.addr() | WRITE_SINGLE_BYTE, byte];
+        self.spi.write(&mut buffer)?;
+
+        self.cs.set_high();
+
         Ok(())
     }
 
-    fn write_burst() -> Result<(), E> {
+    fn write_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), E> {
+        self.cs.set_low();
+
+        // Hopefully the same as writing an array that starts with the command followed by buf
+        self.spi.write(&[com.addr() | WRITE_BURST]);
+        self.spi.write(&buf)?;
+
+        self.cs.set_high();
+
         Ok(())
+    }
+}
+
+// Read/Write Offsets
+const WRITE_SINGLE_BYTE: u8 = 0x00;
+const WRITE_BURST: u8 = 0x40;
+const READ_SINGLE_BYTE: u8 = 0x80;
+const READ_BURST: u8 = 0xC0;
+
+impl Register {
+    fn addr(self) -> u8 {
+        self as u8
     }
 }
 
@@ -118,10 +176,16 @@ enum Register {
     TEST0     = 0x2E,         // Various test settings
 }
 
+impl Command {
+    fn addr(self) -> u8 {
+        self as u8
+    }
+}
+
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
-enum Commands {
+enum Command {
     /* STROBE COMMANDS */
     SRES      = 0x30,         // Reset chip
     SFSTXON   = 0x31,         // Enable/calibrate freq synthesizer
@@ -139,6 +203,8 @@ enum Commands {
     SNOP      = 0x3D,         // No operation.
 
     /* FIFO COMMANDS */
+    WRITE_BURST          = 0x40,
+    READ_BURST           = 0xC0,
     TXFIFO_BURST         = 0x7F,   //write burst only
     TXFIFO_SINGLE_BYTE   = 0x3F,   //write single only
     RXFIFO_BURST         = 0xFF,   //read burst only
