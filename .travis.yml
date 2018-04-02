@@ -15,15 +15,26 @@ matrix:
     - env: TARGET_BUILD=x86_64-unknown-linux-gnu
       rust: nightly
 
-before_install: set -e
+before_install:
+  - set -e
+  - rustup self update
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq gcc-arm-none-eabi
 
 install:
-  - bash ci/install.sh
+  - rustup override set nightly
+  - rustup component add rust-src
+  - rustup target add arm-unknown-linux-gnueabi
+  - rustup target add armv7-unknown-linux-gnueabihf
+  - source ~/.cargo/env || true
+  - mv .cargo ._cargo
+  - cargo install xargo || true
+  - mv ._cargo .cargo
 
 script:
-  - bash ci/script.sh
+  - xargo build --target $TARGET_BUILD
+  - xargo build --target $TARGET_BUILD --release
 
-after_script: set +e
 
 #after_success:
 #  - bash ci/after_success.sh
