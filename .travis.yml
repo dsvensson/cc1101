@@ -4,11 +4,7 @@ matrix:
   include:
     - env: TARGET_BUILD=thumbv6m-none-eabi
       rust: nightly
-    - env: TARGET_BUILD=thumbv7em-none-eabi
-      rust: nightly
     - env: TARGET_BUILD=thumbv7em-none-eabihf
-      rust: nightly
-    - env: TARGET_BUILD=thumbv7m-none-eabi
       rust: nightly
     - env: TARGET_BUILD=armv7-unknown-linux-gnueabihf
       rust: nightly
@@ -35,6 +31,16 @@ script:
   - xargo build --target $TARGET_BUILD
   - xargo build --target $TARGET_BUILD --release
 
+after_script: set +e
+
+cache:
+  cargo: true
+  directories:
+    - $HOME/.xargo
+
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
 
 #after_success:
 #  - bash ci/after_success.sh
