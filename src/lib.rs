@@ -9,6 +9,8 @@ use hal::blocking::spi::{Transfer, Write};
 //use hal::spi::{Mode, Phase, Polarity};
 use hal::digital::OutputPin;
 
+const FXOSC: u64 = 26_000_000;
+
 pub struct Cc1101<SPI, CS> {
     spi: SPI,
     cs: CS,
@@ -27,6 +29,122 @@ where
         Ok(cc1101)
     }
 
+    pub fn set_frequency(&mut self, hz: u64) -> Result<(), E> {
+        let freq = hz * 1u64.rotate_left(16) / FXOSC;
+        self.write_register(Register::FREQ2, ((freq >> 16) & 0xff) as u8)?;
+        self.write_register(Register::FREQ1, ((freq >> 8) & 0xff) as u8)?;
+        self.write_register(Register::FREQ0, (freq & 0xff) as u8)?;
+        Ok(())
+    }
+
+    pub fn set_sync_mode(&mut self, sync_mode: u8) -> Result<(), E> {
+        self.modify_register(Register::MDMCFG2, |r| {
+            (r & 0b11111000) | (sync_mode & 0b111)
+        })?;
+        Ok(())
+    }
+
+    pub fn set_sync_word(&mut self, sync_word: u16) -> Result<(), E> {
+        self.write_register(Register::SYNC1, ((sync_word >> 8) & 0xff) as u8)?;
+        self.write_register(Register::SYNC0, (sync_word & 0xff) as u8)?;
+        Ok(())
+    }
+
+    pub fn set_modulation(&mut self, sync_mode: Modulation) -> Result<(), E> {
+        self.modify_register(Register::MDMCFG2, |r| {
+            (r & 0b10001111) | (sync_mode.addr() << 4)
+        })?;
+        Ok(())
+    }
+
+    pub fn set_packet_mode(&mut self, packet_mode: PacketMode) -> Result<(), E> {
+        self.modify_register(Register::PKTCTRL0, |r| {
+            (r & 0b00111111) | (packet_mode.addr() << 6)
+        })?;
+        Ok(())
+    }
+
+    pub fn set_packet_length(&mut self, length: u8) -> Result<(), E> {
+        self.write_register(Register::PKTLEN, length)?;
+        Ok(())
+    }
+
+    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), E> {
+        self.write_strobe(match radio_mode {
+            RadioMode::RECEIVE => Command::SRX,
+            RadioMode::TRANSMIT => Command::STX,
+        })?;
+        Ok(())
+    }
+
+    pub fn set_defaults(&mut self) -> Result<(), E> {
+        // Default values extracted from Smart RF Studio 7
+        // Should be replaced with calls to properly named
+        // functions.
+        self.write_register(Register::IOCFG2, 0x2E)?;
+        self.write_register(Register::IOCFG1, 0x2E)?;
+        self.write_register(Register::IOCFG0, 0x06)?;
+        self.write_register(Register::FIFOTHR, 0x07)?;
+        self.write_register(Register::PKTLEN, 20)?;
+        self.write_register(Register::PKTCTRL1, 0x06)?;
+        self.write_register(Register::PKTCTRL0, 0x04)?;
+        self.write_register(Register::CHANNR, 0x00)?;
+        self.modify_register(Register::PKTCTRL1, |r| r & 0b11111100)?;
+        self.write_register(Register::FSCTRL1, 0x08)?;
+        self.write_register(Register::FSCTRL0, 0x00)?;
+        self.write_register(Register::MDMCFG4, 0xCA)?;
+        self.write_register(Register::MDMCFG3, 0x83)?;
+        self.write_register(Register::MDMCFG2, 0x93)?;
+        self.write_register(Register::MDMCFG1, 0x22)?;
+        self.write_register(Register::MDMCFG0, 0xF8)?;
+        self.write_register(Register::DEVIATN, 0x35)?;
+        self.write_register(Register::MCSM2, 0x07)?;
+        self.write_register(Register::MCSM1, 0x20)?;
+        self.write_register(Register::MCSM0, 0x18)?;
+        self.write_register(Register::FOCCFG, 0x16)?;
+        self.write_register(Register::BSCFG, 0x6C)?;
+        self.write_register(Register::AGCCTRL2, 0x43)?;
+        self.write_register(Register::AGCCTRL1, 0x40)?;
+        self.write_register(Register::AGCCTRL0, 0x91)?;
+        self.write_register(Register::WOREVT1, 0x87)?;
+        self.write_register(Register::WOREVT0, 0x6B)?;
+        self.write_register(Register::WORCTRL, 0xFB)?;
+        self.write_register(Register::FREND1, 0x56)?;
+        self.write_register(Register::FREND0, 0x10)?;
+        self.write_register(Register::FSCAL3, 0xE9)?;
+        self.write_register(Register::FSCAL2, 0x2A)?;
+        self.write_register(Register::FSCAL1, 0x00)?;
+        self.write_register(Register::FSCAL0, 0x1F)?;
+        self.write_register(Register::RCCTRL1, 0x41)?;
+        self.write_register(Register::RCCTRL0, 0x00)?;
+        self.write_register(Register::FSTEST, 0x59)?;
+        self.write_register(Register::PTEST, 0x7F)?;
+        self.write_register(Register::AGCTEST, 0x3F)?;
+        self.write_register(Register::TEST2, 0x81)?;
+        self.write_register(Register::TEST1, 0x35)?;
+        self.write_register(Register::TEST0, 0x09)?;
+        self.write_register(Register::PATABLE, 0xC0)?;
+
+        Ok(())
+    }
+
+    pub fn reset(&mut self) -> Result<(), E> {
+        self.write_strobe(Command::SRES)?;
+        Ok(())
+    }
+
+    pub fn receive_would_block(&mut self) -> Result<bool, E> {
+        let rx_bytes = self.read_register(Register::RXBYTES)?;
+        Ok(!((rx_bytes & 0x7F > 0) && (rx_bytes & 0x80 == 0)))
+    }
+
+    pub fn receive(&mut self, buf: &mut [u8]) -> Result<(), E> {
+        while self.receive_would_block()? {}
+        self.read_burst(Command::RXFIFO_BURST, buf)?;
+        self.write_strobe(Command::SFRX)?;
+        Ok(())
+    }
+
     fn read_register(&mut self, reg: Register) -> Result<u8, E> {
         self.cs.set_low();
 
@@ -38,35 +156,18 @@ where
         Ok(buffer[1])
     }
 
-    fn read_burst(&mut self, com: Command, mut buf: &mut [u8]) -> Result<(), E> {
+    fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), E> {
         self.cs.set_low();
-        /*
-        let mut rx_buf: [u8; buf.len()] = [0; buf.len()+1];
-        rx_buf[0] = com.addr() | READ_BURST;
-
-        self.spi.transfer(&mut rx_buf)?;
-
-        for i in 1..buf.len()+1 {
-            buf[i-1] = rx_buf[i];
-        }
-        */
-
-        // Hopefully the same as transferring an array that starts with the command followed by buf
-        self.spi.write(&[com.addr() | READ_BURST]);
-        self.spi.transfer(&mut buf)?;
-
+        buf[0] = com.addr() | READ_BURST;
+        self.spi.transfer(buf)?;
         self.cs.set_high();
-
         Ok(())
     }
 
     fn write_strobe(&mut self, com: Command) -> Result<(), E> {
         self.cs.set_low();
-
         self.spi.write(&[com.addr()])?;
-
         self.cs.set_high();
-
         Ok(())
     }
 
@@ -85,11 +186,20 @@ where
         self.cs.set_low();
 
         // Hopefully the same as writing an array that starts with the command followed by buf
-        self.spi.write(&[com.addr() | WRITE_BURST]);
+        self.spi.write(&[com.addr() | WRITE_BURST])?;
         self.spi.write(&buf)?;
 
         self.cs.set_high();
 
+        Ok(())
+    }
+
+    fn modify_register<F>(&mut self, reg: Register, f: F) -> Result<(), E>
+    where
+        F: FnOnce(u8) -> u8,
+    {
+        let r = self.read_register(reg)?;
+        self.write_register(reg, f(r))?;
         Ok(())
     }
 }
@@ -174,6 +284,7 @@ enum Register {
     TEST2 = 0x2C,    // Various test settings
     TEST1 = 0x2D,    // Various test settings
     TEST0 = 0x2E,    // Various test settings
+    PATABLE = 0x3E,
 }
 
 impl Command {
@@ -211,4 +322,38 @@ enum Command {
     RXFIFO_SINGLE_BYTE = 0xBF,  //read single only
     PATABLE_BURST = 0x7E,       //power control read/write
     PATABLE_SINGLE_BYTE = 0xFE, //power control read/write
+}
+
+impl Modulation {
+    fn addr(self) -> u8 {
+        self as u8
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub enum Modulation {
+    MOD_2FSK = 0b000,
+    MOD_GFSK = 0b001,
+    MOD_ASK_OOK = 0b011,
+    MOD_4FSK = 0b100,
+    MOD_MSK = 0b111,
+}
+
+impl PacketMode {
+    fn addr(self) -> u8 {
+        self as u8
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub enum PacketMode {
+    Fixed = 0b00,
+    // Variable = 0b01,
+    // Infinite = 0b10,
+}
+
+#[allow(non_camel_case_types)]
+pub enum RadioMode {
+    RECEIVE,
+    TRANSMIT,
 }
