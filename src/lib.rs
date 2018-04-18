@@ -70,10 +70,18 @@ where
     }
 
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), E> {
-        self.write_strobe(match radio_mode {
-            RadioMode::RECEIVE => Command::SRX,
-            RadioMode::TRANSMIT => Command::STX,
-        })?;
+        match radio_mode {
+            RadioMode::Receive => {
+                self.write_strobe(Command::SIDLE)?;
+                self.write_strobe(Command::SRX)?;
+            }
+            RadioMode::Transmit => {
+                self.write_strobe(Command::SIDLE)?;
+                self.write_strobe(Command::STX)?;
+            }
+            RadioMode::Idle => self.write_strobe(Command::SIDLE)?,
+        };
+        // while self.read_register(Register::MARCSTATE) RX: 0x0d, TX: 0x1f, and maybe delay
         Ok(())
     }
 
@@ -138,10 +146,30 @@ where
         Ok(!((rx_bytes & 0x7F > 0) && (rx_bytes & 0x80 == 0)))
     }
 
-    pub fn receive(&mut self, buf: &mut [u8]) -> Result<(), E> {
+    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), E> {
         while self.receive_would_block()? {}
+
         self.read_burst(Command::RXFIFO_BURST, buf)?;
+
+        // ugh.. to move..
+        {
+            let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
+            self.cs.set_low();
+            self.spi.transfer(&mut status)?;
+            self.cs.set_high();
+            *rssi = status[1];
+        }
+
+        {
+            let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
+            self.cs.set_low();
+            self.spi.transfer(&mut status)?;
+            self.cs.set_high();
+            *lsi = status[1];
+        }
+
         self.write_strobe(Command::SFRX)?;
+
         Ok(())
     }
 
@@ -352,8 +380,8 @@ pub enum PacketMode {
     // Infinite = 0b10,
 }
 
-#[allow(non_camel_case_types)]
 pub enum RadioMode {
-    RECEIVE,
-    TRANSMIT,
+    Receive,
+    Transmit,
+    Idle,
 }
