@@ -21,12 +21,16 @@ install:
   - rustup component add rust-src
   - rustup target add arm-unknown-linux-gnueabi
   - rustup target add armv7-unknown-linux-gnueabihf
+  - rustup target add thumbv7em-none-eabihf
+  - rustup target add thumbv7em-none-eabi
+  - rustup target add thumbv6m-none-eabi
+  - rustup target add thumbv7m-none-eabi
   - source ~/.cargo/env || true
-  - cargo install xargo || true
 
 script:
-  - xargo build --target $TARGET_BUILD
-  - xargo build --target $TARGET_BUILD --release
+  - cargo build --target $TARGET_BUILD
+  - cargo build --target $TARGET_BUILD --release
+  - cargo check
 
 after_script: set +e
 
