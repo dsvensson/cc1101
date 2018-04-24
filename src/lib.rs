@@ -57,15 +57,22 @@ where
         Ok(())
     }
 
-    pub fn set_packet_mode(&mut self, packet_mode: PacketMode) -> Result<(), E> {
-        self.modify_register(Register::PKTCTRL0, |r| {
-            (r & 0b00111111) | (packet_mode.addr() << 6)
-        })?;
-        Ok(())
-    }
-
-    pub fn set_packet_length(&mut self, length: u8) -> Result<(), E> {
-        self.write_register(Register::PKTLEN, length)?;
+    pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), E> {
+        match length {
+            PacketLength::Fixed(limit) => {
+                self.modify_register(Register::PKTCTRL0, |r| r & 0b00111111)?;
+                self.write_register(Register::PKTLEN, limit)?;
+            }
+            PacketLength::Variable(max_limit) => {
+                self.modify_register(Register::PKTCTRL0, |r| (r & 0b00111111) | (0b01 << 6))?;
+                self.write_register(Register::PKTLEN, max_limit)?;
+            }
+            PacketLength::Infinite => {
+                let reset: u8 = 0xff;
+                self.modify_register(Register::PKTCTRL0, |r| (r & 0b00111111) | (0b11 << 6))?;
+                self.write_register(Register::PKTLEN, reset)?;
+            }
+        }
         Ok(())
     }
 
@@ -367,17 +374,10 @@ pub enum Modulation {
     MOD_MSK = 0b111,
 }
 
-impl PacketMode {
-    fn addr(self) -> u8 {
-        self as u8
-    }
-}
-
-#[allow(non_camel_case_types)]
-pub enum PacketMode {
-    Fixed = 0b00,
-    // Variable = 0b01,
-    // Infinite = 0b10,
+pub enum PacketLength {
+    Fixed(u8),
+    Variable(u8),
+    Infinite,
 }
 
 pub enum RadioMode {
