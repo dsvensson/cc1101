@@ -77,18 +77,23 @@ where
     }
 
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), E> {
-        match radio_mode {
+        let target = match radio_mode {
             RadioMode::Receive => {
-                self.write_strobe(Command::SIDLE)?;
+                self.set_radio_mode(RadioMode::Idle)?;
                 self.write_strobe(Command::SRX)?;
+                MachineState::RX
             }
             RadioMode::Transmit => {
-                self.write_strobe(Command::SIDLE)?;
+                self.set_radio_mode(RadioMode::Idle)?;
                 self.write_strobe(Command::STX)?;
+                MachineState::TX
             }
-            RadioMode::Idle => self.write_strobe(Command::SIDLE)?,
+            RadioMode::Idle => {
+                self.write_strobe(Command::SIDLE)?;
+                MachineState::IDLE
+            }
         };
-        // while self.read_register(Register::MARCSTATE) RX: 0x0d, TX: 0x1f, and maybe delay
+        self.await_machine_state(target)?;
         Ok(())
     }
 
