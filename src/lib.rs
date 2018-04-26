@@ -11,6 +11,12 @@ use hal::digital::OutputPin;
 
 const FXOSC: u64 = 26_000_000;
 
+#[derive(Debug)]
+pub enum Error<E> {
+    RxOverflow,
+    Spi(E),
+}
+
 pub struct Cc1101<SPI, CS> {
     spi: SPI,
     cs: CS,
@@ -23,13 +29,13 @@ where
     SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
     CS: OutputPin,
 {
-    pub fn new(spi: SPI, cs: CS) -> Result<Self, E> {
+    pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
         let cc1101 = Cc1101 { spi: spi, cs: cs };
 
         Ok(cc1101)
     }
 
-    pub fn set_frequency(&mut self, hz: u64) -> Result<(), E> {
+    pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
         let freq = hz * 1u64.rotate_left(16) / FXOSC;
         self.write_register(Register::FREQ2, ((freq >> 16) & 0xff) as u8)?;
         self.write_register(Register::FREQ1, ((freq >> 8) & 0xff) as u8)?;
@@ -37,27 +43,27 @@ where
         Ok(())
     }
 
-    pub fn set_sync_mode(&mut self, sync_mode: u8) -> Result<(), E> {
+    pub fn set_sync_mode(&mut self, sync_mode: u8) -> Result<(), Error<E>> {
         self.modify_register(Register::MDMCFG2, |r| {
             (r & 0b11111000) | (sync_mode & 0b111)
         })?;
         Ok(())
     }
 
-    pub fn set_sync_word(&mut self, sync_word: u16) -> Result<(), E> {
+    pub fn set_sync_word(&mut self, sync_word: u16) -> Result<(), Error<E>> {
         self.write_register(Register::SYNC1, ((sync_word >> 8) & 0xff) as u8)?;
         self.write_register(Register::SYNC0, (sync_word & 0xff) as u8)?;
         Ok(())
     }
 
-    pub fn set_modulation(&mut self, sync_mode: Modulation) -> Result<(), E> {
+    pub fn set_modulation(&mut self, sync_mode: Modulation) -> Result<(), Error<E>> {
         self.modify_register(Register::MDMCFG2, |r| {
             (r & 0b10001111) | (sync_mode.addr() << 4)
         })?;
         Ok(())
     }
 
-    pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), E> {
+    pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
         match length {
             PacketLength::Fixed(limit) => {
                 self.modify_register(Register::PKTCTRL0, |r| r & 0b00111111)?;
@@ -76,7 +82,7 @@ where
         Ok(())
     }
 
-    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), E> {
+    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<E>> {
         let target = match radio_mode {
             RadioMode::Receive => {
                 self.set_radio_mode(RadioMode::Idle)?;
@@ -97,7 +103,7 @@ where
         Ok(())
     }
 
-    pub fn set_defaults(&mut self) -> Result<(), E> {
+    pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         // Default values extracted from Smart RF Studio 7
         // Should be replaced with calls to properly named
         // functions.
@@ -148,12 +154,12 @@ where
         Ok(())
     }
 
-    pub fn reset(&mut self) -> Result<(), E> {
+    pub fn reset(&mut self) -> Result<(), Error<E>> {
         self.write_strobe(Command::SRES)?;
         Ok(())
     }
 
-    fn await_machine_state(&mut self, target: MachineState) -> Result<(), E> {
+    fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
         loop {
             let state = self.read_register(Register::MARCSTATE)? & 0b11111;
             if target.value() == state {
@@ -163,12 +169,12 @@ where
         Ok(())
     }
 
-    pub fn receive_would_block(&mut self) -> Result<bool, E> {
+    pub fn receive_would_block(&mut self) -> Result<bool, Error<E>> {
         let rx_bytes = self.read_register(Register::RXBYTES)?;
         Ok(!((rx_bytes & 0x7F > 0) && (rx_bytes & 0x80 == 0)))
     }
 
-    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), E> {
+    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), Error<E>> {
         while self.receive_would_block()? {}
 
         self.read_burst(Command::RXFIFO_BURST, buf)?;
@@ -177,7 +183,7 @@ where
         {
             let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
             self.cs.set_low();
-            self.spi.transfer(&mut status)?;
+            self.spi.transfer(&mut status).map_err(Error::Spi)?;
             self.cs.set_high();
             *rssi = status[1];
         }
@@ -185,7 +191,7 @@ where
         {
             let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
             self.cs.set_low();
-            self.spi.transfer(&mut status)?;
+            self.spi.transfer(&mut status).map_err(Error::Spi)?;
             self.cs.set_high();
             *lsi = status[1];
         }
@@ -195,56 +201,58 @@ where
         Ok(())
     }
 
-    fn read_register(&mut self, reg: Register) -> Result<u8, E> {
+    fn read_register(&mut self, reg: Register) -> Result<u8, Error<E>> {
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | READ_SINGLE_BYTE, 0];
-        self.spi.transfer(&mut buffer)?;
+        self.spi.transfer(&mut buffer).map_err(Error::Spi)?;
 
         self.cs.set_high();
 
         Ok(buffer[1])
     }
 
-    fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), E> {
+    fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
         self.cs.set_low();
         buf[0] = com.addr() | READ_BURST;
-        self.spi.transfer(buf)?;
+        self.spi.transfer(buf).map_err(Error::Spi)?;
         self.cs.set_high();
         Ok(())
     }
 
-    fn write_strobe(&mut self, com: Command) -> Result<(), E> {
+    fn write_strobe(&mut self, com: Command) -> Result<(), Error<E>> {
         self.cs.set_low();
-        self.spi.write(&[com.addr()])?;
+        self.spi.write(&[com.addr()]).map_err(Error::Spi)?;
         self.cs.set_high();
         Ok(())
     }
 
-    fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), E> {
+    fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), Error<E>> {
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | WRITE_SINGLE_BYTE, byte];
-        self.spi.write(&mut buffer)?;
+        self.spi.write(&mut buffer).map_err(Error::Spi)?;
 
         self.cs.set_high();
 
         Ok(())
     }
 
-    fn write_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), E> {
+    fn write_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
         self.cs.set_low();
 
         // Hopefully the same as writing an array that starts with the command followed by buf
-        self.spi.write(&[com.addr() | WRITE_BURST])?;
-        self.spi.write(&buf)?;
+        self.spi
+            .write(&[com.addr() | WRITE_BURST])
+            .map_err(Error::Spi)?;
+        self.spi.write(&buf).map_err(Error::Spi)?;
 
         self.cs.set_high();
 
         Ok(())
     }
 
-    fn modify_register<F>(&mut self, reg: Register, f: F) -> Result<(), E>
+    fn modify_register<F>(&mut self, reg: Register, f: F) -> Result<(), Error<E>>
     where
         F: FnOnce(u8) -> u8,
     {
