@@ -169,13 +169,27 @@ where
         Ok(())
     }
 
-    pub fn receive_would_block(&mut self) -> Result<bool, Error<E>> {
-        let rx_bytes = self.read_register(Register::RXBYTES)?;
-        Ok(!((rx_bytes & 0x7F > 0) && (rx_bytes & 0x80 == 0)))
+    pub fn rx_bytes_available(&mut self) -> Result<u8, Error<E>> {
+        let num_bytes_mask = 0x7F;
+        let overflow = 1 << 7;
+
+        let mut last = 0;
+        loop {
+            let value = self.read_register(Register::RXBYTES)?;
+            if (value & overflow) > 0 {
+                return Err(Error::RxOverflow);
+            }
+            let mut nbytes = value & num_bytes_mask;
+            if nbytes > 0 && nbytes == last {
+                break;
+            }
+            last = nbytes;
+        }
+        Ok(last)
     }
 
     pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), Error<E>> {
-        while self.receive_would_block()? {}
+        let _nbytes = self.rx_bytes_available()?;
 
         self.read_burst(Command::RXFIFO_BURST, buf)?;
 
