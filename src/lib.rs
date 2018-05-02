@@ -188,6 +188,9 @@ where
         Ok(last)
     }
 
+    // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
+    // to enter after fully receiving a packet.
+    // Possible targets: IDLE, FSTON, TX, RX
     pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), Error<E>> {
         let _nbytes = self.rx_bytes_available()?;
 
