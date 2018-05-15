@@ -200,11 +200,11 @@ where
     pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), Error<E>> {
         let _nbytes = self.rx_bytes_available()?;
 
-        self.read_burst(Command::RXFIFO_BURST, buf)?;
+        self.read_burst(Command::FIFO, buf)?;
 
         // ugh.. to move..
         {
-            let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
+            let mut status = [Command::FIFO.addr() | Access::READ_SINGLE.offset(), 0];
             self.cs.set_low();
             self.spi.transfer(&mut status)?;
             self.cs.set_high();
@@ -212,7 +212,7 @@ where
         }
 
         {
-            let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
+            let mut status = [Command::FIFO.addr() | Access::READ_SINGLE.offset(), 0];
             self.cs.set_low();
             self.spi.transfer(&mut status)?;
             self.cs.set_high();
@@ -227,7 +227,7 @@ where
     fn read_register(&mut self, reg: Register) -> Result<u8, Error<E>> {
         self.cs.set_low();
 
-        let mut buffer = [reg.addr() | READ_SINGLE_BYTE, 0];
+        let mut buffer = [reg.addr() | Access::READ_SINGLE.offset(), 0];
         self.spi.transfer(&mut buffer)?;
 
         self.cs.set_high();
@@ -237,7 +237,7 @@ where
 
     fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
         self.cs.set_low();
-        buf[0] = com.addr() | READ_BURST;
+        buf[0] = com.addr() | Access::READ_BURST.offset();
         self.spi.transfer(buf)?;
         self.cs.set_high();
         Ok(())
@@ -253,7 +253,7 @@ where
     fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), Error<E>> {
         self.cs.set_low();
 
-        let mut buffer = [reg.addr() | WRITE_SINGLE_BYTE, byte];
+        let mut buffer = [reg.addr() | Access::WRITE_SINGLE.offset(), byte];
         self.spi.write(&mut buffer)?;
 
         self.cs.set_high();
@@ -265,7 +265,8 @@ where
         self.cs.set_low();
 
         // Hopefully the same as writing an array that starts with the command followed by buf
-        self.spi.write(&[com.addr() | WRITE_BURST])?;
+        self.spi
+            .write(&[com.addr() | Access::WRITE_BURST.offset()])?;
         self.spi.write(&buf)?;
 
         self.cs.set_high();
@@ -283,11 +284,23 @@ where
     }
 }
 
-// Read/Write Offsets
-const WRITE_SINGLE_BYTE: u8 = 0x00;
-const WRITE_BURST: u8 = 0x40;
-const READ_SINGLE_BYTE: u8 = 0x80;
-const READ_BURST: u8 = 0xC0;
+#[derive(Clone, Copy)]
+enum Access {
+    /// Write Single Byte
+    WRITE_SINGLE = 0x00,
+    /// Write Burst
+    WRITE_BURST = 0x40,
+    /// Read Single Byte
+    READ_SINGLE = 0x80,
+    /// Read Burst
+    READ_BURST = 0xC0,
+}
+
+impl Access {
+    fn offset(&self) -> u8 {
+        *self as u8
+    }
+}
 
 impl Register {
     fn addr(self) -> u8 {
@@ -391,16 +404,8 @@ enum Command {
     SFTX = 0x3B,    // Flush the TX FIFO buffer.
     SWORRST = 0x3C, // Reset real time clock.
     SNOP = 0x3D,    // No operation.
-
-    /* FIFO COMMANDS */
-    WRITE_BURST = 0x40,
-    READ_BURST = 0xC0,
-    TXFIFO_BURST = 0x7F,        //write burst only
-    TXFIFO_SINGLE_BYTE = 0x3F,  //write single only
-    RXFIFO_BURST = 0xFF,        //read burst only
-    RXFIFO_SINGLE_BYTE = 0xBF,  //read single only
-    PATABLE_BURST = 0x7E,       //power control read/write
-    PATABLE_SINGLE_BYTE = 0xFE, //power control read/write
+    PATABLE = 0x3E, // Power Amplifier Table
+    FIFO = 0x3F,    // FIFO Access
 }
 
 impl Modulation {
