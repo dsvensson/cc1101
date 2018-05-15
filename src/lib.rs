@@ -17,6 +17,12 @@ pub enum Error<E> {
     Spi(E),
 }
 
+impl<E> From<E> for Error<E> {
+    fn from(e: E) -> Self {
+        Error::Spi(e)
+    }
+}
+
 pub struct Cc1101<SPI, CS> {
     spi: SPI,
     cs: CS,
@@ -200,7 +206,7 @@ where
         {
             let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
             self.cs.set_low();
-            self.spi.transfer(&mut status).map_err(Error::Spi)?;
+            self.spi.transfer(&mut status)?;
             self.cs.set_high();
             *rssi = status[1];
         }
@@ -208,7 +214,7 @@ where
         {
             let mut status = [Command::TXFIFO_SINGLE_BYTE.addr() | READ_SINGLE_BYTE, 0];
             self.cs.set_low();
-            self.spi.transfer(&mut status).map_err(Error::Spi)?;
+            self.spi.transfer(&mut status)?;
             self.cs.set_high();
             *lsi = status[1];
         }
@@ -222,7 +228,7 @@ where
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | READ_SINGLE_BYTE, 0];
-        self.spi.transfer(&mut buffer).map_err(Error::Spi)?;
+        self.spi.transfer(&mut buffer)?;
 
         self.cs.set_high();
 
@@ -232,14 +238,14 @@ where
     fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
         self.cs.set_low();
         buf[0] = com.addr() | READ_BURST;
-        self.spi.transfer(buf).map_err(Error::Spi)?;
+        self.spi.transfer(buf)?;
         self.cs.set_high();
         Ok(())
     }
 
     fn write_strobe(&mut self, com: Command) -> Result<(), Error<E>> {
         self.cs.set_low();
-        self.spi.write(&[com.addr()]).map_err(Error::Spi)?;
+        self.spi.write(&[com.addr()])?;
         self.cs.set_high();
         Ok(())
     }
@@ -248,7 +254,7 @@ where
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | WRITE_SINGLE_BYTE, byte];
-        self.spi.write(&mut buffer).map_err(Error::Spi)?;
+        self.spi.write(&mut buffer)?;
 
         self.cs.set_high();
 
@@ -259,10 +265,8 @@ where
         self.cs.set_low();
 
         // Hopefully the same as writing an array that starts with the command followed by buf
-        self.spi
-            .write(&[com.addr() | WRITE_BURST])
-            .map_err(Error::Spi)?;
-        self.spi.write(&buf).map_err(Error::Spi)?;
+        self.spi.write(&[com.addr() | WRITE_BURST])?;
+        self.spi.write(&buf)?;
 
         self.cs.set_high();
 
