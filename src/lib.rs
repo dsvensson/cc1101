@@ -11,6 +11,11 @@ use hal::digital::OutputPin;
 
 const FXOSC: u64 = 26_000_000;
 
+#[macro_use]
+mod macros;
+mod config;
+mod traits;
+
 #[derive(Debug)]
 pub enum Error<E> {
     RxOverflow,
@@ -43,27 +48,27 @@ where
 
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
         let freq = hz * 1u64.rotate_left(16) / FXOSC;
-        self.write_register(Register::FREQ2, ((freq >> 16) & 0xff) as u8)?;
-        self.write_register(Register::FREQ1, ((freq >> 8) & 0xff) as u8)?;
-        self.write_register(Register::FREQ0, (freq & 0xff) as u8)?;
+        self.write_register(config::Register::FREQ2, ((freq >> 16) & 0xff) as u8)?;
+        self.write_register(config::Register::FREQ1, ((freq >> 8) & 0xff) as u8)?;
+        self.write_register(config::Register::FREQ0, (freq & 0xff) as u8)?;
         Ok(())
     }
 
     pub fn set_sync_mode(&mut self, sync_mode: u8) -> Result<(), Error<E>> {
-        self.modify_register(Register::MDMCFG2, |r| {
+        self.modify_register(config::Register::MDMCFG2, |r| {
             (r & 0b11111000) | (sync_mode & 0b111)
         })?;
         Ok(())
     }
 
     pub fn set_sync_word(&mut self, sync_word: u16) -> Result<(), Error<E>> {
-        self.write_register(Register::SYNC1, ((sync_word >> 8) & 0xff) as u8)?;
-        self.write_register(Register::SYNC0, (sync_word & 0xff) as u8)?;
+        self.write_register(config::Register::SYNC1, ((sync_word >> 8) & 0xff) as u8)?;
+        self.write_register(config::Register::SYNC0, (sync_word & 0xff) as u8)?;
         Ok(())
     }
 
     pub fn set_modulation(&mut self, sync_mode: Modulation) -> Result<(), Error<E>> {
-        self.modify_register(Register::MDMCFG2, |r| {
+        self.modify_register(config::Register::MDMCFG2, |r| {
             (r & 0b10001111) | (sync_mode.addr() << 4)
         })?;
         Ok(())
@@ -72,17 +77,21 @@ where
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
         match length {
             PacketLength::Fixed(limit) => {
-                self.modify_register(Register::PKTCTRL0, |r| r & 0b00111111)?;
-                self.write_register(Register::PKTLEN, limit)?;
+                self.modify_register(config::Register::PKTCTRL0, |r| r & 0b00111111)?;
+                self.write_register(config::Register::PKTLEN, limit)?;
             }
             PacketLength::Variable(max_limit) => {
-                self.modify_register(Register::PKTCTRL0, |r| (r & 0b00111111) | (0b01 << 6))?;
-                self.write_register(Register::PKTLEN, max_limit)?;
+                self.modify_register(config::Register::PKTCTRL0, |r| {
+                    (r & 0b00111111) | (0b01 << 6)
+                })?;
+                self.write_register(config::Register::PKTLEN, max_limit)?;
             }
             PacketLength::Infinite => {
                 let reset: u8 = 0xff;
-                self.modify_register(Register::PKTCTRL0, |r| (r & 0b00111111) | (0b11 << 6))?;
-                self.write_register(Register::PKTLEN, reset)?;
+                self.modify_register(config::Register::PKTCTRL0, |r| {
+                    (r & 0b00111111) | (0b11 << 6)
+                })?;
+                self.write_register(config::Register::PKTLEN, reset)?;
             }
         }
         Ok(())
@@ -113,49 +122,49 @@ where
         // Default values extracted from Smart RF Studio 7
         // Should be replaced with calls to properly named
         // functions.
-        self.write_register(Register::IOCFG2, 0x2E)?;
-        self.write_register(Register::IOCFG1, 0x2E)?;
-        self.write_register(Register::IOCFG0, 0x06)?;
-        self.write_register(Register::FIFOTHR, 0x07)?;
-        self.write_register(Register::PKTLEN, 20)?;
-        self.write_register(Register::PKTCTRL1, 0x06)?;
-        self.write_register(Register::PKTCTRL0, 0x04)?;
-        self.write_register(Register::CHANNR, 0x00)?;
-        self.modify_register(Register::PKTCTRL1, |r| r & 0b11111100)?;
-        self.write_register(Register::FSCTRL1, 0x08)?;
-        self.write_register(Register::FSCTRL0, 0x00)?;
-        self.write_register(Register::MDMCFG4, 0xCA)?;
-        self.write_register(Register::MDMCFG3, 0x83)?;
-        self.write_register(Register::MDMCFG2, 0x93)?;
-        self.write_register(Register::MDMCFG1, 0x22)?;
-        self.write_register(Register::MDMCFG0, 0xF8)?;
-        self.write_register(Register::DEVIATN, 0x35)?;
-        self.write_register(Register::MCSM2, 0x07)?;
-        self.write_register(Register::MCSM1, 0x20)?;
-        self.write_register(Register::MCSM0, 0x18)?;
-        self.write_register(Register::FOCCFG, 0x16)?;
-        self.write_register(Register::BSCFG, 0x6C)?;
-        self.write_register(Register::AGCCTRL2, 0x43)?;
-        self.write_register(Register::AGCCTRL1, 0x40)?;
-        self.write_register(Register::AGCCTRL0, 0x91)?;
-        self.write_register(Register::WOREVT1, 0x87)?;
-        self.write_register(Register::WOREVT0, 0x6B)?;
-        self.write_register(Register::WORCTRL, 0xFB)?;
-        self.write_register(Register::FREND1, 0x56)?;
-        self.write_register(Register::FREND0, 0x10)?;
-        self.write_register(Register::FSCAL3, 0xE9)?;
-        self.write_register(Register::FSCAL2, 0x2A)?;
-        self.write_register(Register::FSCAL1, 0x00)?;
-        self.write_register(Register::FSCAL0, 0x1F)?;
-        self.write_register(Register::RCCTRL1, 0x41)?;
-        self.write_register(Register::RCCTRL0, 0x00)?;
-        self.write_register(Register::FSTEST, 0x59)?;
-        self.write_register(Register::PTEST, 0x7F)?;
-        self.write_register(Register::AGCTEST, 0x3F)?;
-        self.write_register(Register::TEST2, 0x81)?;
-        self.write_register(Register::TEST1, 0x35)?;
-        self.write_register(Register::TEST0, 0x09)?;
-        self.write_register(Register::PATABLE, 0xC0)?;
+        self.write_register(config::Register::IOCFG2, 0x2E)?;
+        self.write_register(config::Register::IOCFG1, 0x2E)?;
+        self.write_register(config::Register::IOCFG0, 0x06)?;
+        self.write_register(config::Register::FIFOTHR, 0x07)?;
+        self.write_register(config::Register::PKTLEN, 20)?;
+        self.write_register(config::Register::PKTCTRL1, 0x06)?;
+        self.write_register(config::Register::PKTCTRL0, 0x04)?;
+        self.write_register(config::Register::CHANNR, 0x00)?;
+        self.modify_register(config::Register::PKTCTRL1, |r| r & 0b11111100)?;
+        self.write_register(config::Register::FSCTRL1, 0x08)?;
+        self.write_register(config::Register::FSCTRL0, 0x00)?;
+        self.write_register(config::Register::MDMCFG4, 0xCA)?;
+        self.write_register(config::Register::MDMCFG3, 0x83)?;
+        self.write_register(config::Register::MDMCFG2, 0x93)?;
+        self.write_register(config::Register::MDMCFG1, 0x22)?;
+        self.write_register(config::Register::MDMCFG0, 0xF8)?;
+        self.write_register(config::Register::DEVIATN, 0x35)?;
+        self.write_register(config::Register::MCSM2, 0x07)?;
+        self.write_register(config::Register::MCSM1, 0x20)?;
+        self.write_register(config::Register::MCSM0, 0x18)?;
+        self.write_register(config::Register::FOCCFG, 0x16)?;
+        self.write_register(config::Register::BSCFG, 0x6C)?;
+        self.write_register(config::Register::AGCCTRL2, 0x43)?;
+        self.write_register(config::Register::AGCCTRL1, 0x40)?;
+        self.write_register(config::Register::AGCCTRL0, 0x91)?;
+        self.write_register(config::Register::WOREVT1, 0x87)?;
+        self.write_register(config::Register::WOREVT0, 0x6B)?;
+        self.write_register(config::Register::WORCTRL, 0xFB)?;
+        self.write_register(config::Register::FREND1, 0x56)?;
+        self.write_register(config::Register::FREND0, 0x10)?;
+        self.write_register(config::Register::FSCAL3, 0xE9)?;
+        self.write_register(config::Register::FSCAL2, 0x2A)?;
+        self.write_register(config::Register::FSCAL1, 0x00)?;
+        self.write_register(config::Register::FSCAL0, 0x1F)?;
+        self.write_register(config::Register::RCCTRL1, 0x41)?;
+        self.write_register(config::Register::RCCTRL0, 0x00)?;
+        self.write_register(config::Register::FSTEST, 0x59)?;
+        self.write_register(config::Register::PTEST, 0x7F)?;
+        self.write_register(config::Register::AGCTEST, 0x3F)?;
+        self.write_register(config::Register::TEST2, 0x81)?;
+        self.write_register(config::Register::TEST1, 0x35)?;
+        self.write_register(config::Register::TEST0, 0x09)?;
+        //self.write_register(config::Register::PATABLE, 0xC0)?;
 
         Ok(())
     }
@@ -166,9 +175,10 @@ where
     }
 
     fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
+        let mut marcstate = [0u8; 2];
         loop {
-            let state = self.read_register(Register::MARCSTATE)? & 0b11111;
-            if target.value() == state {
+            self.read_burst(Command::STX, &mut marcstate)?;
+            if target.value() == (marcstate[1] & 0b11111) {
                 break;
             }
         }
@@ -180,12 +190,13 @@ where
         let overflow = 1 << 7;
 
         let mut last = 0;
+        let mut rxbytes = [0u8; 2];
         loop {
-            let value = self.read_register(Register::RXBYTES)?;
-            if (value & overflow) > 0 {
+            self.read_burst(Command::SFTX, &mut rxbytes)?;
+            if (rxbytes[1] & overflow) > 0 {
                 return Err(Error::RxOverflow);
             }
-            let mut nbytes = value & num_bytes_mask;
+            let mut nbytes = rxbytes[1] & num_bytes_mask;
             if nbytes > 0 && nbytes == last {
                 break;
             }
@@ -224,7 +235,7 @@ where
         Ok(())
     }
 
-    fn read_register(&mut self, reg: Register) -> Result<u8, Error<E>> {
+    fn read_register(&mut self, reg: config::Register) -> Result<u8, Error<E>> {
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | Access::READ_SINGLE.offset(), 0];
@@ -250,7 +261,7 @@ where
         Ok(())
     }
 
-    fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), Error<E>> {
+    fn write_register(&mut self, reg: config::Register, byte: u8) -> Result<(), Error<E>> {
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | Access::WRITE_SINGLE.offset(), byte];
@@ -274,7 +285,7 @@ where
         Ok(())
     }
 
-    fn modify_register<F>(&mut self, reg: Register, f: F) -> Result<(), Error<E>>
+    fn modify_register<F>(&mut self, reg: config::Register, f: F) -> Result<(), Error<E>>
     where
         F: FnOnce(u8) -> u8,
     {
@@ -300,83 +311,6 @@ impl Access {
     fn offset(&self) -> u8 {
         *self as u8
     }
-}
-
-impl Register {
-    fn addr(self) -> u8 {
-        self as u8
-    }
-}
-
-#[allow(dead_code)]
-#[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
-enum Register {
-    /* STATUS REGISTER */
-    PARTNUM = 0xF0,        // Part number
-    VERSION = 0xF1,        // Current version number
-    FREQEST = 0xF2,        // Frequency offset estimate
-    LQI = 0xF3,            // Demodulator estimate for link quality
-    RSSI = 0xF4,           // Received signal strength indication
-    MARCSTATE = 0xF5,      // Control state machine state
-    WORTIME1 = 0xF6,       // High byte of WOR timer
-    WORTIME0 = 0xF7,       // Low byte of WOR timer
-    PKTSTATUS = 0xF8,      // Current GDOx status and packet status
-    VCO_VC_DAC = 0xF9,     // Current setting from PLL cal module
-    TXBYTES = 0xFA,        // Underflow and # of bytes in TXFIFO
-    RXBYTES = 0xFB,        // Overflow and # of bytes in RXFIFO
-    RCCTRL1_STATUS = 0xFC, // Last RC Oscillator Calibration Result
-    RCCTRL0_STATUS = 0xFD, // Last RC Oscillator Calibration Result
-
-    /* CONFIG REGISTER */
-    IOCFG2 = 0x00,   // GDO2 output pin configuration
-    IOCFG1 = 0x01,   // GDO1 output pin configuration
-    IOCFG0 = 0x02,   // GDO0 output pin configuration
-    FIFOTHR = 0x03,  // RX FIFO and TX FIFO thresholds
-    SYNC1 = 0x04,    // Sync word, high byte
-    SYNC0 = 0x05,    // Sync word, low byte
-    PKTLEN = 0x06,   // Packet length
-    PKTCTRL1 = 0x07, // Packet automation control
-    PKTCTRL0 = 0x08, // Packet automation control
-    ADDR = 0x09,     // Device address
-    CHANNR = 0x0A,   // Channel number
-    FSCTRL1 = 0x0B,  // Frequency synthesizer control
-    FSCTRL0 = 0x0C,  // Frequency synthesizer control
-    FREQ2 = 0x0D,    // Frequency control word, high byte
-    FREQ1 = 0x0E,    // Frequency control word, middle byte
-    FREQ0 = 0x0F,    // Frequency control word, low byte
-    MDMCFG4 = 0x10,  // Modem configuration
-    MDMCFG3 = 0x11,  // Modem configuration
-    MDMCFG2 = 0x12,  // Modem configuration
-    MDMCFG1 = 0x13,  // Modem configuration
-    MDMCFG0 = 0x14,  // Modem configuration
-    DEVIATN = 0x15,  // Modem deviation setting
-    MCSM2 = 0x16,    // Main Radio Cntrl State Machine config
-    MCSM1 = 0x17,    // Main Radio Cntrl State Machine config
-    MCSM0 = 0x18,    // Main Radio Cntrl State Machine config
-    FOCCFG = 0x19,   // Frequency Offset Compensation config
-    BSCFG = 0x1A,    // Bit Synchronization configuration
-    AGCCTRL2 = 0x1B, // AGC control
-    AGCCTRL1 = 0x1C, // AGC control
-    AGCCTRL0 = 0x1D, // AGC control
-    WOREVT1 = 0x1E,  // High byte Event 0 timeout
-    WOREVT0 = 0x1F,  // Low byte Event 0 timeout
-    WORCTRL = 0x20,  // Wake On Radio control
-    FREND1 = 0x21,   // Front end RX configuration
-    FREND0 = 0x22,   // Front end TX configuration
-    FSCAL3 = 0x23,   // Frequency synthesizer calibration
-    FSCAL2 = 0x24,   // Frequency synthesizer calibration
-    FSCAL1 = 0x25,   // Frequency synthesizer calibration
-    FSCAL0 = 0x26,   // Frequency synthesizer calibration
-    RCCTRL1 = 0x27,  // RC oscillator configuration
-    RCCTRL0 = 0x28,  // RC oscillator configuration
-    FSTEST = 0x29,   // Frequency synthesizer cal control
-    PTEST = 0x2A,    // Production test
-    AGCTEST = 0x2B,  // AGC test
-    TEST2 = 0x2C,    // Various test settings
-    TEST1 = 0x2D,    // Various test settings
-    TEST0 = 0x2E,    // Various test settings
-    PATABLE = 0x3E,
 }
 
 impl Command {
