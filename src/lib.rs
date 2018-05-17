@@ -118,53 +118,134 @@ where
         Ok(())
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
-        // Default values extracted from Smart RF Studio 7
-        // Should be replaced with calls to properly named
-        // functions.
-        self.write_register(config::Register::IOCFG2, 0x2E)?;
-        self.write_register(config::Register::IOCFG1, 0x2E)?;
-        self.write_register(config::Register::IOCFG0, 0x06)?;
-        self.write_register(config::Register::FIFOTHR, 0x07)?;
-        self.write_register(config::Register::PKTLEN, 20)?;
-        self.write_register(config::Register::PKTCTRL1, 0x06)?;
-        self.write_register(config::Register::PKTCTRL0, 0x04)?;
-        self.write_register(config::Register::CHANNR, 0x00)?;
-        self.modify_register(config::Register::PKTCTRL1, |r| r & 0b11111100)?;
-        self.write_register(config::Register::FSCTRL1, 0x08)?;
-        self.write_register(config::Register::FSCTRL0, 0x00)?;
-        self.write_register(config::Register::MDMCFG4, 0xCA)?;
-        self.write_register(config::Register::MDMCFG3, 0x83)?;
-        self.write_register(config::Register::MDMCFG2, 0x93)?;
-        self.write_register(config::Register::MDMCFG1, 0x22)?;
-        self.write_register(config::Register::MDMCFG0, 0xF8)?;
-        self.write_register(config::Register::DEVIATN, 0x35)?;
-        self.write_register(config::Register::MCSM2, 0x07)?;
-        self.write_register(config::Register::MCSM1, 0x20)?;
-        self.write_register(config::Register::MCSM0, 0x18)?;
-        self.write_register(config::Register::FOCCFG, 0x16)?;
-        self.write_register(config::Register::BSCFG, 0x6C)?;
-        self.write_register(config::Register::AGCCTRL2, 0x43)?;
-        self.write_register(config::Register::AGCCTRL1, 0x40)?;
-        self.write_register(config::Register::AGCCTRL0, 0x91)?;
-        self.write_register(config::Register::WOREVT1, 0x87)?;
-        self.write_register(config::Register::WOREVT0, 0x6B)?;
-        self.write_register(config::Register::WORCTRL, 0xFB)?;
-        self.write_register(config::Register::FREND1, 0x56)?;
-        self.write_register(config::Register::FREND0, 0x10)?;
-        self.write_register(config::Register::FSCAL3, 0xE9)?;
-        self.write_register(config::Register::FSCAL2, 0x2A)?;
-        self.write_register(config::Register::FSCAL1, 0x00)?;
-        self.write_register(config::Register::FSCAL0, 0x1F)?;
-        self.write_register(config::Register::RCCTRL1, 0x41)?;
-        self.write_register(config::Register::RCCTRL0, 0x00)?;
-        self.write_register(config::Register::FSTEST, 0x59)?;
-        self.write_register(config::Register::PTEST, 0x7F)?;
-        self.write_register(config::Register::AGCTEST, 0x3F)?;
-        self.write_register(config::Register::TEST2, 0x81)?;
-        self.write_register(config::Register::TEST1, 0x35)?;
-        self.write_register(config::Register::TEST0, 0x09)?;
-        //self.write_register(config::Register::PATABLE, 0xC0)?;
+        use config::*;
+
+        self.write_register(Register::IOCFG2, IOCFG2::default()
+            .gdo2_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
+        )?;
+
+        self.write_register(Register::IOCFG1, IOCFG1::default()
+            .gdo1_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
+        )?;
+
+        self.write_register(Register::IOCFG2, IOCFG0::default()
+            .gdo0_cfg(GdoCfg::SYNC_WORD.value()).bits()
+        )?;
+
+        self.write_register(Register::FIFOTHR, FIFOTHR::default()
+            .fifo_thr(FifoThreshold::TX_33_RX_32.value()).bits()
+        )?;
+
+        self.write_register(Register::PKTLEN, PKTLEN::default()
+            .packet_length(20).bits()
+        )?;
+
+        self.write_register(Register::PKTCTRL1, PKTCTRL1::default()
+            .adr_chk(AddressCheck::DISABLED.value()).bits()
+        )?;
+
+        self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
+            .crc_en(1)
+            .length_config(LengthConfig::FIXED.value()).bits()
+        )?;
+
+        self.write_register(Register::CHANNR, CHANNR::default()
+            .chan(0).bits()
+        )?;
+
+        self.write_register(Register::FSCTRL1, FSCTRL1::default()
+            .freq_if(0x08) // f_if = (f_osc / 2^10) * FREQ_IF
+            .bits()
+        )?;
+
+        self.write_register(Register::FSCTRL0, FSCTRL0::default().bits())?;
+
+        self.write_register(Register::MDMCFG4, MDMCFG4::default()
+            .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
+            .chanbw_m(0x00)
+            .drate_e(0x0A).bits()
+        )?;
+
+        self.write_register(Register::MDMCFG3, MDMCFG3::default()
+            .drate_m(0x83).bits() // r_data = (((256 + drate_m) * 2^drate_e) / 2**38) * f_osc
+        )?;
+
+        self.write_register(Register::MDMCFG2, MDMCFG2::default()
+            .dem_dcfilt_off(1)
+            .mod_format(Modulation::MOD_GFSK.addr())
+            .sync_mode(SyncMode::CHECK_30_32.value()).bits()
+        )?;
+
+        self.write_register(Register::MDMCFG1, MDMCFG1::default().bits())?;
+        self.write_register(Register::MDMCFG0, MDMCFG0::default().bits())?;
+
+        self.write_register(Register::DEVIATN, DEVIATN::default()
+            .deviation_e(0x03)
+            .deviation_m(0x05).bits()
+        )?;
+
+        self.write_register(Register::MCSM2, MCSM2::default().bits())?;
+        self.write_register(Register::MCSM1, MCSM1::default().bits())?;
+
+        self.write_register(Register::MCSM0, MCSM0::default()
+            .fs_autocal(AutoCalibration::FROM_IDLE.value())
+            .po_timeout(PoTimeout::EXPIRE_COUNT_64.value()).bits()
+        )?;
+
+        self.write_register(Register::FOCCFG, FOCCFG::default().foc_bs_cs_gate(0).bits())?;
+        self.write_register(Register::BSCFG, BSCFG::default().bits())?;
+
+        self.write_register(Register::AGCCTRL2, AGCCTRL2::default()
+            .max_lna_gain(0x04).bits()
+        )?;
+
+        self.write_register(Register::AGCCTRL1, AGCCTRL1::default().bits())?;
+        self.write_register(Register::AGCCTRL0, AGCCTRL0::default().bits())?;
+        self.write_register(Register::WOREVT1, WOREVT1::default().bits())?;
+        self.write_register(Register::WOREVT0, WOREVT0::default().bits())?;
+
+        self.write_register(Register::WORCTRL, WORCTRL::default()
+            .wor_res(0x03).bits()
+        )?;
+
+        self.write_register(Register::FREND1, FREND1::default().bits())?;
+        self.write_register(Register::FREND0, FREND0::default().bits())?;
+
+        self.write_register(Register::FSCAL3, FSCAL3::default()
+            .fscal3(0x03).bits()
+        )?;
+
+        self.write_register(Register::FSCAL2, FSCAL2::default()
+            .vco_core_h_en(1).bits()
+        )?;
+
+        self.write_register(Register::FSCAL1, FSCAL1::default()
+            .fscal1(0).bits()
+        )?;
+
+        self.write_register(Register::FSCAL0, FSCAL0::default()
+            .fscal0(0x1F).bits()
+        )?;
+
+        self.write_register(Register::RCCTRL1, RCCTRL1::default().bits())?;
+        self.write_register(Register::RCCTRL0, RCCTRL0::default().bits())?;
+        self.write_register(Register::FSTEST, FSTEST::default().bits())?;
+        self.write_register(Register::PTEST, PTEST::default().bits())?;
+        self.write_register(Register::AGCTEST, AGCTEST::default().bits())?;
+
+        self.write_register(Register::TEST2, TEST2::default()
+            .test2(0x81).bits()
+        )?;
+
+        self.write_register(Register::TEST1, TEST1::default()
+            .test1(0x35).bits()
+        )?;
+
+        self.write_register(Register::TEST0, TEST0::default()
+            .vco_sel_cal_en(1).bits()
+        )?;
 
         Ok(())
     }
@@ -402,4 +483,198 @@ enum MachineState {
     TX_END = 0x14,
     RXTX_SWITCH = 0x15,
     TXFIFO_UNDERFLOW = 0x16,
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum GdoCfg {
+    RX_FIFO_FILLED = 0x00,
+    RX_FIFO_FILLED_END_OF_PKT = 0x01,
+    TX_FIFO_FILLED = 0x02,
+    TX_FIFO_FULL = 0x03,
+    RX_FIFO_OVERFLOW = 0x04,
+    TX_FIFO_UNDERFLOW = 0x05,
+    SYNC_WORD = 0x06,
+    CRC_OK = 0x07,
+    PQT_REACHED = 0x08,
+    CHANNEL_CLEAR = 0x09,
+    PLL_LOCK = 0x0A,
+    SERIAL_CLOCK = 0x0B,
+    SERIAL_SYNC_DATA_OUT = 0x0C,
+    SERIAL_DATA_OUT = 0x0D,
+    CARRIER_SENSE = 0x0E,
+    LAST_CRC_OK = 0x0F,
+
+    RX_HARD_DATA_1 = 0x16,
+    RX_HARD_DATA_0 = 0x17,
+
+    PA_PD = 0x1B,
+    LNA_PD = 0x1C,
+    RX_SYMBOL_TICK = 0x1D,
+
+    WOR_EVNT0 = 0x24,
+    WOR_EVNT1 = 0x25,
+    CLK_256 = 0x26,
+    CLK_32k = 0x27,
+
+    CHIP_RDYn = 0x29,
+
+    XOSC_STABLE = 0x2B,
+
+    HIGH_IMPEDANCE = 0x2E,
+    HARDWIRE_TO_0 = 0x2F,
+    CLK_XOSC_1 = 0x30,
+    CLK_XOSC_1_5 = 0x31,
+    CLK_XOSC_2 = 0x32,
+    CLK_XOSC_3 = 0x33,
+    CLK_XOSC_4 = 0x34,
+    CLK_XOSC_6 = 0x35,
+    CLK_XOSC_8 = 0x36,
+    CLK_XOSC_12 = 0x37,
+    CLK_XOSC_16 = 0x38,
+    CLK_XOSC_24 = 0x39,
+    CLK_XOSC_32 = 0x3A,
+    CLK_XOSC_48 = 0x3B,
+    CLK_XOSC_64 = 0x3C,
+    CLK_XOSC_96 = 0x3D,
+    CLK_XOSC_128 = 0x3E,
+    CLK_XOSC_192 = 0x3F,
+}
+
+impl GdoCfg {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum FifoThreshold {
+    TX_61_RX_4 = 0x00,
+    TX_57_RX_8 = 0x01,
+    TX_53_RX_12 = 0x02,
+    TX_49_RX_16 = 0x03,
+    TX_45_RX_20 = 0x04,
+    TX_41_RX_24 = 0x05,
+    TX_37_RX_28 = 0x06,
+    TX_33_RX_32 = 0x07,
+    TX_29_RX_36 = 0x08,
+    TX_25_RX_40 = 0x09,
+    TX_21_RX_44 = 0x0A,
+    TX_17_RX_48 = 0x0B,
+    TX_13_RX_52 = 0x0C,
+    TX_9_RX_56 = 0x0D,
+    TX_5_RX_60 = 0x0E,
+    TX_1_RX_64 = 0x0F,
+}
+
+impl FifoThreshold {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum AddressCheck {
+    DISABLED = 0x00,
+    SELF = 0x01,
+    SELF_LOW_BROADCAST = 0x02,
+    SELF_HIGH_LOW_BROADCAST = 0x03,
+}
+
+impl AddressCheck {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum LengthConfig {
+    FIXED = 0x00,
+    VARIABLE = 0x01,
+    INFINITE = 0x02,
+}
+
+impl LengthConfig {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum SyncMode {
+    DISABLED = 0x00,
+    CHECK_15_16 = 0x01,
+    CHECK_16_16 = 0x02,
+    CHECK_30_32 = 0x03,
+    CHECK_0_0_CS = 0x04,
+    CHECK_15_16_CS = 0x05,
+    CHECK_16_16_CS = 0x06,
+    CHECK_30_32_CS = 0x07,
+}
+
+impl SyncMode {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum NumPreamble {
+    N_2 = 0x00,
+    N_3 = 0x01,
+    N_4 = 0x02,
+    N_6 = 0x03,
+    N_8 = 0x04,
+    N_12 = 0x05,
+    N_16 = 0x06,
+    N_24 = 0x07,
+}
+
+impl NumPreamble {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum AutoCalibration {
+    DISABLED = 0x00,
+    FROM_IDLE = 0x01,
+    TO_IDLE = 0x02,
+    TO_IDLE_EVERY_4TH = 0x03,
+}
+
+impl AutoCalibration {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum PoTimeout {
+    EXPIRE_COUNT_1 = 0x00,
+    EXPIRE_COUNT_16 = 0x01,
+    EXPIRE_COUNT_64 = 0x02,
+    EXPIRE_COUNT_256 = 0x03,
+}
+
+impl PoTimeout {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
 }
