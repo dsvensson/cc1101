@@ -19,9 +19,9 @@ macro_rules! register {
                 pub(crate) fn $bitfield(&self) -> $uxx {
                     use ::traits::OffsetSize;
 
-                    let size = $range.size();
+                    let size = $range.size() + 1;
                     let offset = $range.offset();
-                    ((1 << size) - 1) << offset
+                    (((1 << size) - 1) as u8) << offset
                 }
             )+
         }
@@ -51,8 +51,8 @@ macro_rules! register {
                     use ::traits::OffsetSize;
 
                     let offset = $range.offset();
-                    let size = $range.size();
-                    let mask = (1 << size) - 1;
+                    let size = $range.size() + 1;
+                    let mask = ((1 << size) - 1) as u8;
 
                     (self.bits >> offset) & mask
                 }
@@ -72,8 +72,8 @@ macro_rules! register {
                     use ::traits::OffsetSize;
 
                     let offset = $range.offset();
-                    let size = $range.size();
-                    let mask = (1 << size) - 1;
+                    let size = $range.size() + 1;
+                    let mask = ((1 << size) - 1) as u8;
 
                     debug_assert!(bits <= mask);
                     bits &= mask;
