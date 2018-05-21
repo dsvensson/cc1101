@@ -74,6 +74,29 @@ where
         Ok(())
     }
 
+    pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<E>> {
+        use config::*;
+
+        let (mode, addr) = match filter {
+            AddressFilter::Disabled => {
+                (AddressCheck::DISABLED, ADDR::default().bits())
+            }
+            AddressFilter::Device(addr) => {
+                (AddressCheck::SELF, addr)
+            }
+            AddressFilter::DeviceLowBroadcast(addr) => {
+                (AddressCheck::SELF_LOW_BROADCAST, addr)
+            }
+            AddressFilter::DeviceHighLowBroadcast(addr) => {
+                (AddressCheck::SELF_HIGH_LOW_BROADCAST, addr)
+            }
+        };
+        self.write_register(Register::ADDR, addr)?;
+        self.modify_register(Register::PKTCTRL1, |r| {
+            PKTCTRL1(r).modify().adr_chk(mode.value()).bits()
+        })
+    }
+
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
         use config::*;
 
@@ -439,6 +462,13 @@ pub enum PacketLength {
     Fixed(u8),
     Variable(u8),
     Infinite,
+}
+
+pub enum AddressFilter {
+    Disabled,
+    Device(u8),
+    DeviceLowBroadcast(u8),
+    DeviceHighLowBroadcast(u8),
 }
 
 pub enum RadioMode {
