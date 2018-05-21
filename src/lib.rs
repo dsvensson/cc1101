@@ -144,8 +144,8 @@ where
         )?;
 
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
-            .crc_en(1)
-            .length_config(LengthConfig::FIXED.value()).bits()
+            .white_data(0)
+            .crc_en(1).bits()
         )?;
 
         self.write_register(Register::CHANNR, CHANNR::default()
