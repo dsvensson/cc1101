@@ -75,26 +75,23 @@ where
     }
 
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
-        match length {
+        use config::*;
+
+        let (format, pktlen) = match length {
             PacketLength::Fixed(limit) => {
-                self.modify_register(config::Register::PKTCTRL0, |r| r & 0b00111111)?;
-                self.write_register(config::Register::PKTLEN, limit)?;
+                (LengthConfig::FIXED, limit)
             }
             PacketLength::Variable(max_limit) => {
-                self.modify_register(config::Register::PKTCTRL0, |r| {
-                    (r & 0b00111111) | (0b01 << 6)
-                })?;
-                self.write_register(config::Register::PKTLEN, max_limit)?;
+                (LengthConfig::VARIABLE, max_limit)
             }
             PacketLength::Infinite => {
-                let reset: u8 = 0xff;
-                self.modify_register(config::Register::PKTCTRL0, |r| {
-                    (r & 0b00111111) | (0b11 << 6)
-                })?;
-                self.write_register(config::Register::PKTLEN, reset)?;
+                (LengthConfig::INFINITE, PKTLEN::default().bits())
             }
-        }
-        Ok(())
+        };
+        self.modify_register(Register::PKTCTRL0, |r| {
+            PKTCTRL0(r).modify().length_config(format.value()).bits()
+        })?;
+        self.write_register(Register::PKTLEN, pktlen)
     }
 
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<E>> {
