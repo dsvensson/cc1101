@@ -448,13 +448,12 @@ impl Modulation {
     }
 }
 
-#[allow(non_camel_case_types)]
 pub enum Modulation {
-    MOD_2FSK = 0b000,
-    MOD_GFSK = 0b001,
-    MOD_ASK_OOK = 0b011,
-    MOD_4FSK = 0b100,
-    MOD_MSK = 0b111,
+    BinaryFrequencyShiftKeying = 0b000,
+    GaussianFrequencyShiftKeying = 0b001,
+    OnOffKeying = 0b011,
+    FourFrequencyShiftKeying = 0b100,
+    MinimumShiftKeying = 0b111,
 }
 
 pub enum PacketLength {
