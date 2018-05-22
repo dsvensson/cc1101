@@ -395,6 +395,8 @@ where
     }
 }
 
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 enum Access {
     /// Write Single Byte
@@ -666,6 +668,7 @@ enum NumPreamble {
     N_24 = 0x07,
 }
 
+#[allow(dead_code)]
 impl NumPreamble {
     fn value(&self) -> u8 {
         *self as u8
