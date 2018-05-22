@@ -194,7 +194,6 @@ where
 
         self.write_register(Register::MDMCFG2, MDMCFG2::default()
             .dem_dcfilt_off(1)
-            .mod_format(Modulation::MOD_GFSK.addr())
             .sync_mode(SyncMode::CHECK_30_32.value()).bits()
         )?;
 
