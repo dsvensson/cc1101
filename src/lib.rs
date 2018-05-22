@@ -67,11 +67,11 @@ where
         Ok(())
     }
 
-    pub fn set_modulation(&mut self, sync_mode: Modulation) -> Result<(), Error<E>> {
-        self.modify_register(config::Register::MDMCFG2, |r| {
-            (r & 0b10001111) | (sync_mode.addr() << 4)
-        })?;
-        Ok(())
+    pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<E>> {
+        use config::*;
+        self.modify_register(Register::MDMCFG2, |r| {
+            MDMCFG2(r).modify().mod_format(format.value()).bits()
+        })
     }
 
     pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<E>> {
@@ -443,7 +443,7 @@ enum Command {
 }
 
 impl Modulation {
-    fn addr(self) -> u8 {
+    fn value(self) -> u8 {
         self as u8
     }
 }
