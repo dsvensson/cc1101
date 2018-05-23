@@ -166,13 +166,8 @@ where
             .fifo_thr(FifoThreshold::TX_33_RX_32.value()).bits()
         )?;
 
-        self.write_register(Register::PKTLEN, PKTLEN::default()
-            .packet_length(20).bits()
-        )?;
-
-        self.write_register(Register::PKTCTRL1, PKTCTRL1::default()
-            .adr_chk(AddressCheck::DISABLED.value()).bits()
-        )?;
+        self.write_register(Register::PKTLEN, PKTLEN::default().bits())?;
+        self.write_register(Register::PKTCTRL1, PKTCTRL1::default().bits())?;
 
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
             .white_data(0)
