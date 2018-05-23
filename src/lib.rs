@@ -54,17 +54,25 @@ where
         Ok(())
     }
 
-    pub fn set_sync_mode(&mut self, sync_mode: u8) -> Result<(), Error<E>> {
-        self.modify_register(config::Register::MDMCFG2, |r| {
-            (r & 0b11111000) | (sync_mode & 0b111)
-        })?;
-        Ok(())
-    }
+    pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
+        use config::*;
 
-    pub fn set_sync_word(&mut self, sync_word: u16) -> Result<(), Error<E>> {
-        self.write_register(config::Register::SYNC1, ((sync_word >> 8) & 0xff) as u8)?;
-        self.write_register(config::Register::SYNC0, (sync_word & 0xff) as u8)?;
-        Ok(())
+        let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
+        let (mode, word) = match sync_mode {
+            SyncMode::Disabled => (SyncCheck::DISABLED, reset),
+            SyncMode::Check15of16(word) => (SyncCheck::CHECK_15_16, word),
+            SyncMode::Check16of16(word) => (SyncCheck::CHECK_16_16, word),
+            SyncMode::Check30of32(word) => (SyncCheck::CHECK_30_32, word),
+            SyncMode::DisabledCarrierSense => (SyncCheck::CHECK_0_0_CS, reset),
+            SyncMode::Check15of16CarrierSense(word) => (SyncCheck::CHECK_15_16_CS, word),
+            SyncMode::Check16of16CarrierSense(word) => (SyncCheck::CHECK_16_16_CS, word),
+            SyncMode::Check30of32CarrierSense(word) => (SyncCheck::CHECK_30_32_CS, word),
+        };
+        self.modify_register(config::Register::MDMCFG2, |r| {
+            MDMCFG2(r).modify().sync_mode(mode.value()).bits()
+        })?;
+        self.write_register(Register::SYNC1, ((word >> 8) & 0xff) as u8)?;
+        self.write_register(Register::SYNC0, (word & 0xff) as u8)
     }
 
     pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<E>> {
@@ -193,8 +201,7 @@ where
         )?;
 
         self.write_register(Register::MDMCFG2, MDMCFG2::default()
-            .dem_dcfilt_off(1)
-            .sync_mode(SyncMode::CHECK_30_32.value()).bits()
+            .dem_dcfilt_off(1).bits()
         )?;
 
         self.write_register(Register::MDMCFG1, MDMCFG1::default().bits())?;
@@ -634,10 +641,21 @@ impl LengthConfig {
     }
 }
 
+pub enum SyncMode {
+    Disabled,
+    Check15of16(u16),
+    Check16of16(u16),
+    Check30of32(u16),
+    DisabledCarrierSense,
+    Check15of16CarrierSense(u16),
+    Check16of16CarrierSense(u16),
+    Check30of32CarrierSense(u16),
+}
+
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
-enum SyncMode {
+enum SyncCheck {
     DISABLED = 0x00,
     CHECK_15_16 = 0x01,
     CHECK_16_16 = 0x02,
@@ -648,7 +666,7 @@ enum SyncMode {
     CHECK_30_32_CS = 0x07,
 }
 
-impl SyncMode {
+impl SyncCheck {
     fn value(&self) -> u8 {
         *self as u8
     }
