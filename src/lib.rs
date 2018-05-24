@@ -150,40 +150,25 @@ where
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         use config::*;
 
+        self.reset()?;
+
         self.write_register(Register::IOCFG2, IOCFG2::default()
             .gdo2_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
-        )?;
-
-        self.write_register(Register::IOCFG1, IOCFG1::default()
-            .gdo1_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
         )?;
 
         self.write_register(Register::IOCFG2, IOCFG0::default()
             .gdo0_cfg(GdoCfg::SYNC_WORD.value()).bits()
         )?;
 
-        self.write_register(Register::FIFOTHR, FIFOTHR::default()
-            .fifo_thr(FifoThreshold::TX_33_RX_32.value()).bits()
-        )?;
-
-        self.write_register(Register::PKTLEN, PKTLEN::default().bits())?;
-        self.write_register(Register::PKTCTRL1, PKTCTRL1::default().bits())?;
-
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
             .white_data(0)
             .crc_en(1).bits()
-        )?;
-
-        self.write_register(Register::CHANNR, CHANNR::default()
-            .chan(0).bits()
         )?;
 
         self.write_register(Register::FSCTRL1, FSCTRL1::default()
             .freq_if(0x08) // f_if = (f_osc / 2^10) * FREQ_IF
             .bits()
         )?;
-
-        self.write_register(Register::FSCTRL0, FSCTRL0::default().bits())?;
 
         self.write_register(Register::MDMCFG4, MDMCFG4::default()
             .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
@@ -199,40 +184,27 @@ where
             .dem_dcfilt_off(1).bits()
         )?;
 
-        self.write_register(Register::MDMCFG1, MDMCFG1::default().bits())?;
-        self.write_register(Register::MDMCFG0, MDMCFG0::default().bits())?;
-
         self.write_register(Register::DEVIATN, DEVIATN::default()
             .deviation_e(0x03)
             .deviation_m(0x05).bits()
         )?;
-
-        self.write_register(Register::MCSM2, MCSM2::default().bits())?;
-        self.write_register(Register::MCSM1, MCSM1::default().bits())?;
 
         self.write_register(Register::MCSM0, MCSM0::default()
             .fs_autocal(AutoCalibration::FROM_IDLE.value())
             .po_timeout(PoTimeout::EXPIRE_COUNT_64.value()).bits()
         )?;
 
-        self.write_register(Register::FOCCFG, FOCCFG::default().foc_bs_cs_gate(0).bits())?;
-        self.write_register(Register::BSCFG, BSCFG::default().bits())?;
+        self.write_register(Register::FOCCFG, FOCCFG::default()
+            .foc_bs_cs_gate(0).bits()
+        )?;
 
         self.write_register(Register::AGCCTRL2, AGCCTRL2::default()
             .max_lna_gain(0x04).bits()
         )?;
 
-        self.write_register(Register::AGCCTRL1, AGCCTRL1::default().bits())?;
-        self.write_register(Register::AGCCTRL0, AGCCTRL0::default().bits())?;
-        self.write_register(Register::WOREVT1, WOREVT1::default().bits())?;
-        self.write_register(Register::WOREVT0, WOREVT0::default().bits())?;
-
         self.write_register(Register::WORCTRL, WORCTRL::default()
             .wor_res(0x03).bits()
         )?;
-
-        self.write_register(Register::FREND1, FREND1::default().bits())?;
-        self.write_register(Register::FREND0, FREND0::default().bits())?;
 
         self.write_register(Register::FSCAL3, FSCAL3::default()
             .fscal3(0x03).bits()
@@ -250,22 +222,12 @@ where
             .fscal0(0x1F).bits()
         )?;
 
-        self.write_register(Register::RCCTRL1, RCCTRL1::default().bits())?;
-        self.write_register(Register::RCCTRL0, RCCTRL0::default().bits())?;
-        self.write_register(Register::FSTEST, FSTEST::default().bits())?;
-        self.write_register(Register::PTEST, PTEST::default().bits())?;
-        self.write_register(Register::AGCTEST, AGCTEST::default().bits())?;
-
         self.write_register(Register::TEST2, TEST2::default()
             .test2(0x81).bits()
         )?;
 
         self.write_register(Register::TEST1, TEST1::default()
             .test1(0x35).bits()
-        )?;
-
-        self.write_register(Register::TEST0, TEST0::default()
-            .vco_sel_cal_en(1).bits()
         )?;
 
         Ok(())
