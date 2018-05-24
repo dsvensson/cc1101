@@ -150,7 +150,7 @@ where
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         use config::*;
 
-        self.reset()?;
+        self.write_strobe(Command::SRES)?;
 
         self.write_register(Register::IOCFG2, IOCFG2::default()
             .gdo2_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
@@ -230,11 +230,6 @@ where
             .test1(0x35).bits()
         )?;
 
-        Ok(())
-    }
-
-    pub fn reset(&mut self) -> Result<(), Error<E>> {
-        self.write_strobe(Command::SRES)?;
         Ok(())
     }
 
