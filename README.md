@@ -2,8 +2,8 @@
 
 > A platform agnostic driver to interface with the CC1101 (Sub-1GHz RF Transceiver)   
 
-<a href="https://travis-ci.org/chocol4te/cc1101" alt="Build Status">
-        <img src="https://travis-ci.org/chocol4te/cc1101.svg?branch=master" /></a>
+<a href="https://travis-ci.org/dsvensson/cc1101" alt="Build Status">
+        <img src="https://travis-ci.org/dsvensson/cc1101.svg?branch=master" /></a>
 <a href="https://crates.io/crates/cc1101" alt="Crates.io">
         <img src="https://img.shields.io/crates/v/cc1101.svg" /></a>
 <a href="https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)" alt="License">
@@ -11,17 +11,11 @@
 
 ## What works
 
-- Nothing :(
+- Configuring radio for reception, and reading data.
 
 ## TODO
 
-- [ ] Basic send/receive functionality
-- [ ] Create example program
-- [ ] Configuration. e.g. selecting the baudrate, power, and frequency
-
-## Examples
-
-Found in the CC1101-examples git repository
+- [ ] Sending data, but only have one module.
 
 ## License
 
