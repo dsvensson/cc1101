@@ -58,15 +58,12 @@ where
         use config::*;
 
         let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
+
         let (mode, word) = match sync_mode {
             SyncMode::Disabled => (SyncCheck::DISABLED, reset),
-            SyncMode::Check15of16(word) => (SyncCheck::CHECK_15_16, word),
-            SyncMode::Check16of16(word) => (SyncCheck::CHECK_16_16, word),
-            SyncMode::Check30of32(word) => (SyncCheck::CHECK_30_32, word),
-            SyncMode::DisabledCarrierSense => (SyncCheck::CHECK_0_0_CS, reset),
-            SyncMode::Check15of16CarrierSense(word) => (SyncCheck::CHECK_15_16_CS, word),
-            SyncMode::Check16of16CarrierSense(word) => (SyncCheck::CHECK_16_16_CS, word),
-            SyncMode::Check30of32CarrierSense(word) => (SyncCheck::CHECK_30_32_CS, word),
+            SyncMode::MatchPartial(word) => (SyncCheck::CHECK_15_16, word),
+            SyncMode::MatchPartialRepeated(word) => (SyncCheck::CHECK_30_32, word),
+            SyncMode::MatchFull(word) => (SyncCheck::CHECK_16_16, word),
         };
         self.modify_register(config::Register::MDMCFG2, |r| {
             MDMCFG2(r).modify().sync_mode(mode.value()).bits()
@@ -595,13 +592,9 @@ impl LengthConfig {
 
 pub enum SyncMode {
     Disabled,
-    Check15of16(u16),
-    Check16of16(u16),
-    Check30of32(u16),
-    DisabledCarrierSense,
-    Check15of16CarrierSense(u16),
-    Check16of16CarrierSense(u16),
-    Check30of32CarrierSense(u16),
+    MatchPartial(u16),
+    MatchPartialRepeated(u16),
+    MatchFull(u16),
 }
 
 #[allow(dead_code)]
