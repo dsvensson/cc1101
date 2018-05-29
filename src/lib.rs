@@ -149,8 +149,7 @@ where
         self.write_strobe(Command::SRES)?;
 
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
-            .white_data(0)
-            .crc_en(1).bits()
+            .white_data(0).bits()
         )?;
 
         self.write_register(Register::FSCTRL1, FSCTRL1::default()
