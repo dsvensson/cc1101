@@ -178,8 +178,7 @@ where
         )?;
 
         self.write_register(Register::MCSM0, MCSM0::default()
-            .fs_autocal(AutoCalibration::FROM_IDLE.value())
-            .po_timeout(PoTimeout::EXPIRE_COUNT_64.value()).bits()
+            .fs_autocal(AutoCalibration::FROM_IDLE.value()).bits()
         )?;
 
         self.write_register(Register::AGCCTRL2, AGCCTRL2::default()
