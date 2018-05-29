@@ -153,8 +153,7 @@ where
         )?;
 
         self.write_register(Register::FSCTRL1, FSCTRL1::default()
-            .freq_if(0x08) // f_if = (f_osc / 2^10) * FREQ_IF
-            .bits()
+            .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
         )?;
 
         self.write_register(Register::MDMCFG4, MDMCFG4::default()
