@@ -1,7 +1,9 @@
+
 macro_rules! register {
     ($REGISTER:ident, $reset_value:expr, $uxx:ty, {
         $(#[$($attr:tt)*] $bitfield:ident @ $range:expr,)+
     }) => {
+        #[allow(non_camel_case_types)]
         #[derive(Clone, Copy)]
         pub(crate) struct $REGISTER<MODE> {
             bits: $uxx,
