@@ -14,6 +14,7 @@ const FXOSC: u64 = 26_000_000;
 #[macro_use]
 mod macros;
 mod config;
+mod status;
 mod traits;
 
 #[derive(Debug)]
@@ -187,10 +188,10 @@ where
     }
 
     fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
-        let mut marcstate = [0u8; 2];
+        use status::*;
         loop {
-            self.read_burst(Command::STX, &mut marcstate)?;
-            if target.value() == (marcstate[1] & 0b11111) {
+            let marcstate = MARCSTATE(self.read_status(Register::MARCSTATE)?);
+            if target.value() == marcstate.marc_state() {
                 break;
             }
         }
@@ -198,20 +199,21 @@ where
     }
 
     pub fn rx_bytes_available(&mut self) -> Result<u8, Error<E>> {
-        let num_bytes_mask = 0x7F;
-        let overflow = 1 << 7;
+        use status::*;
 
         let mut last = 0;
-        let mut rxbytes = [0u8; 2];
+
         loop {
-            self.read_burst(Command::SFTX, &mut rxbytes)?;
-            if (rxbytes[1] & overflow) > 0 {
+            let rxbytes = RXBYTES(self.read_status(Register::RXBYTES)?);
+            if rxbytes.rxfifo_overflow() == 1 {
                 return Err(Error::RxOverflow);
             }
-            let mut nbytes = rxbytes[1] & num_bytes_mask;
+
+            let nbytes = rxbytes.num_rxbytes();
             if nbytes > 0 && nbytes == last {
                 break;
             }
+
             last = nbytes;
         }
         Ok(last)
@@ -220,27 +222,15 @@ where
     // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
     // to enter after fully receiving a packet.
     // Possible targets: IDLE, FSTON, TX, RX
-    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lsi: &mut u8) -> Result<(), Error<E>> {
-        let _nbytes = self.rx_bytes_available()?;
+    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lqi: &mut u8) -> Result<(), Error<E>> {
+        use status::*;
+
+        self.rx_bytes_available()?;
 
         self.read_burst(Command::FIFO, buf)?;
 
-        // ugh.. to move..
-        {
-            let mut status = [Command::FIFO.addr() | Access::READ_SINGLE.offset(), 0];
-            self.cs.set_low();
-            self.spi.transfer(&mut status)?;
-            self.cs.set_high();
-            *rssi = status[1];
-        }
-
-        {
-            let mut status = [Command::FIFO.addr() | Access::READ_SINGLE.offset(), 0];
-            self.cs.set_low();
-            self.spi.transfer(&mut status)?;
-            self.cs.set_high();
-            *lsi = status[1];
-        }
+        *rssi = self.read_status(Register::RSSI)?;
+        *lqi = self.read_status(Register::LQI)?;
 
         self.write_strobe(Command::SFRX)?;
 
@@ -248,6 +238,17 @@ where
     }
 
     fn read_register(&mut self, reg: config::Register) -> Result<u8, Error<E>> {
+        self.cs.set_low();
+
+        let mut buffer = [reg.addr() | Access::READ_SINGLE.offset(), 0];
+        self.spi.transfer(&mut buffer)?;
+
+        self.cs.set_high();
+
+        Ok(buffer[1])
+    }
+
+    fn read_status(&mut self, reg: status::Register) -> Result<u8, Error<E>> {
         self.cs.set_low();
 
         let mut buffer = [reg.addr() | Access::READ_SINGLE.offset(), 0];
