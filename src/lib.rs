@@ -210,14 +210,6 @@ where
             .fscal0(0x1F).bits()
         )?;
 
-        self.write_register(Register::TEST2, TEST2::default()
-            .test2(0x81).bits()
-        )?;
-
-        self.write_register(Register::TEST1, TEST1::default()
-            .test1(0x35).bits()
-        )?;
-
         Ok(())
     }
 
