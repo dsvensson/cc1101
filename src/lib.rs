@@ -42,7 +42,6 @@ where
 {
     pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
         let cc1101 = Cc1101 { spi: spi, cs: cs };
-
         Ok(cc1101)
     }
 
@@ -149,22 +148,12 @@ where
 
         self.write_strobe(Command::SRES)?;
 
-        self.write_register(Register::IOCFG2, IOCFG2::default()
-            .gdo2_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
-        )?;
-
-        self.write_register(Register::IOCFG2, IOCFG0::default()
-            .gdo0_cfg(GdoCfg::SYNC_WORD.value()).bits()
-        )?;
-
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
-            .white_data(0)
-            .crc_en(1).bits()
+            .white_data(0).bits()
         )?;
 
         self.write_register(Register::FSCTRL1, FSCTRL1::default()
-            .freq_if(0x08) // f_if = (f_osc / 2^10) * FREQ_IF
-            .bits()
+            .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
         )?;
 
         self.write_register(Register::MDMCFG4, MDMCFG4::default()
@@ -187,44 +176,11 @@ where
         )?;
 
         self.write_register(Register::MCSM0, MCSM0::default()
-            .fs_autocal(AutoCalibration::FROM_IDLE.value())
-            .po_timeout(PoTimeout::EXPIRE_COUNT_64.value()).bits()
-        )?;
-
-        self.write_register(Register::FOCCFG, FOCCFG::default()
-            .foc_bs_cs_gate(0).bits()
+            .fs_autocal(AutoCalibration::FROM_IDLE.value()).bits()
         )?;
 
         self.write_register(Register::AGCCTRL2, AGCCTRL2::default()
             .max_lna_gain(0x04).bits()
-        )?;
-
-        self.write_register(Register::WORCTRL, WORCTRL::default()
-            .wor_res(0x03).bits()
-        )?;
-
-        self.write_register(Register::FSCAL3, FSCAL3::default()
-            .fscal3(0x03).bits()
-        )?;
-
-        self.write_register(Register::FSCAL2, FSCAL2::default()
-            .vco_core_h_en(1).bits()
-        )?;
-
-        self.write_register(Register::FSCAL1, FSCAL1::default()
-            .fscal1(0).bits()
-        )?;
-
-        self.write_register(Register::FSCAL0, FSCAL0::default()
-            .fscal0(0x1F).bits()
-        )?;
-
-        self.write_register(Register::TEST2, TEST2::default()
-            .test2(0x81).bits()
-        )?;
-
-        self.write_register(Register::TEST1, TEST1::default()
-            .test1(0x35).bits()
         )?;
 
         Ok(())
