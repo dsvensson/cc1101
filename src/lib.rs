@@ -42,7 +42,6 @@ where
 {
     pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
         let cc1101 = Cc1101 { spi: spi, cs: cs };
-
         Ok(cc1101)
     }
 
@@ -148,14 +147,6 @@ where
         use config::*;
 
         self.write_strobe(Command::SRES)?;
-
-        self.write_register(Register::IOCFG2, IOCFG2::default()
-            .gdo2_cfg(GdoCfg::HIGH_IMPEDANCE.value()).bits()
-        )?;
-
-        self.write_register(Register::IOCFG2, IOCFG0::default()
-            .gdo0_cfg(GdoCfg::SYNC_WORD.value()).bits()
-        )?;
 
         self.write_register(Register::PKTCTRL0, PKTCTRL0::default()
             .white_data(0)
