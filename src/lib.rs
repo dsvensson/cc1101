@@ -185,22 +185,6 @@ where
             .max_lna_gain(0x04).bits()
         )?;
 
-        self.write_register(Register::FSCAL3, FSCAL3::default()
-            .fscal3(0x03).bits()
-        )?;
-
-        self.write_register(Register::FSCAL2, FSCAL2::default()
-            .vco_core_h_en(1).bits()
-        )?;
-
-        self.write_register(Register::FSCAL1, FSCAL1::default()
-            .fscal1(0).bits()
-        )?;
-
-        self.write_register(Register::FSCAL0, FSCAL0::default()
-            .fscal0(0x1F).bits()
-        )?;
-
         Ok(())
     }
 
