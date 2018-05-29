@@ -182,10 +182,6 @@ where
             .po_timeout(PoTimeout::EXPIRE_COUNT_64.value()).bits()
         )?;
 
-        self.write_register(Register::FOCCFG, FOCCFG::default()
-            .foc_bs_cs_gate(0).bits()
-        )?;
-
         self.write_register(Register::AGCCTRL2, AGCCTRL2::default()
             .max_lna_gain(0x04).bits()
         )?;
