@@ -190,10 +190,6 @@ where
             .max_lna_gain(0x04).bits()
         )?;
 
-        self.write_register(Register::WORCTRL, WORCTRL::default()
-            .wor_res(0x03).bits()
-        )?;
-
         self.write_register(Register::FSCAL3, FSCAL3::default()
             .fscal3(0x03).bits()
         )?;
