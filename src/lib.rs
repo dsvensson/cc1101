@@ -139,8 +139,7 @@ where
                 MachineState::IDLE
             }
         };
-        self.await_machine_state(target)?;
-        Ok(())
+        self.await_machine_state(target)
     }
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
