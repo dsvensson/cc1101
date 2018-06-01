@@ -96,10 +96,10 @@ where
                 (AddressCheck::SELF_HIGH_LOW_BROADCAST, addr)
             }
         };
-        self.write_register(Register::ADDR, addr)?;
         self.modify_register(Register::PKTCTRL1, |r| {
             PKTCTRL1(r).modify().adr_chk(mode.value()).bits()
-        })
+        })?;
+        self.write_register(Register::ADDR, addr)
     }
 
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
