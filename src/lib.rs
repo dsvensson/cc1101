@@ -54,6 +54,13 @@ where
         Ok(())
     }
 
+    pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
+        use status::*;
+        let partnum = self.read_status(Register::PARTNUM)?;
+        let version = self.read_status(Register::VERSION)?;
+        Ok((partnum, version))
+    }
+
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
         use config::*;
 
