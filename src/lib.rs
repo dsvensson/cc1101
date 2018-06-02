@@ -16,6 +16,9 @@ mod macros;
 mod config;
 mod status;
 mod traits;
+mod rssi;
+
+use rssi::rssi_to_dbm;
 
 #[derive(Debug)]
 pub enum Error<E> {
@@ -59,6 +62,10 @@ where
         let partnum = self.read_status(Register::PARTNUM)?;
         let version = self.read_status(Register::VERSION)?;
         Ok((partnum, version))
+    }
+
+    pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<E>> {
+        Ok(rssi_to_dbm(self.read_status(status::Register::RSSI)?))
     }
 
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
@@ -228,14 +235,14 @@ where
     // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
     // to enter after fully receiving a packet.
     // Possible targets: IDLE, FSTON, TX, RX
-    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut u8, lqi: &mut u8) -> Result<(), Error<E>> {
+    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut i16, lqi: &mut u8) -> Result<(), Error<E>> {
         use status::*;
 
         self.rx_bytes_available()?;
 
         self.read_burst(Command::FIFO, buf)?;
 
-        *rssi = self.read_status(Register::RSSI)?;
+        *rssi = rssi_to_dbm(self.read_status(Register::RSSI)?);
         *lqi = self.read_status(Register::LQI)?;
 
         self.write_strobe(Command::SFRX)?;
