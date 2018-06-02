@@ -149,6 +149,21 @@ where
         self.await_machine_state(target)
     }
 
+    pub fn set_crc_mode(&mut self, crc_mode: CrcMode) -> Result<(), Error<E>> {
+        use config::*;
+        let (crc_en, autoflush) = match crc_mode {
+            CrcMode::Disabled => (0, 0),
+            CrcMode::Validate => (1, 0),
+            CrcMode::Require => (1, 1)
+        };
+        self.modify_register(Register::PKTCTRL1,|r| {
+            PKTCTRL1(r).modify().crc_autoflush(autoflush).bits()
+        })?;
+        self.modify_register(Register::PKTCTRL0,|r| {
+            PKTCTRL0(r).modify().crc_en(crc_en).bits()
+        })
+    }
+
     #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         use config::*;
@@ -214,6 +229,14 @@ where
             if rxbytes.rxfifo_overflow() == 1 {
                 return Err(Error::RxOverflow);
             }
+            /*
+            let pktstatus = PKTSTATUS(self.read_status(Register::PKTSTATUS)?);
+            if pktstatus.crc_ok() != 1 {
+                self.set_radio_mode(RadioMode::Receive)?;
+                last = 0;
+                continue;
+            }
+            */
 
             let nbytes = rxbytes.num_rxbytes();
             if nbytes > 0 && nbytes == last {
@@ -222,6 +245,7 @@ where
 
             last = nbytes;
         }
+
         Ok(last)
     }
 
@@ -232,6 +256,8 @@ where
         use status::*;
 
         self.rx_bytes_available()?;
+
+        self.set_radio_mode(RadioMode::Idle)?;
 
         self.read_burst(Command::FIFO, buf)?;
 
@@ -628,6 +654,29 @@ enum PoTimeout {
 }
 
 impl PoTimeout {
+    fn value(&self) -> u8 {
+        *self as u8
+    }
+}
+
+pub enum CrcMode {
+    Disabled,
+    Validate,
+    Require
+}
+
+
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
+enum RadioOffMode {
+    IDLE = 0x00,
+    FSTX = 0x01,
+    TX = 0x02,
+    RX = 0x03,
+}
+
+impl RadioOffMode {
     fn value(&self) -> u8 {
         *self as u8
     }
