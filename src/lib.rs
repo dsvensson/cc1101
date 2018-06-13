@@ -42,12 +42,11 @@ where
     CS: OutputPin,
 {
     pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
-        let cc1101 = Cc1101 { spi: spi, cs: cs };
-        Ok(cc1101)
+        Ok(Self { spi, cs })
     }
 
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
-        let freq = hz * 1u64.rotate_left(16) / FXOSC;
+        let freq = hz * 1_u64.rotate_left(16) / FXOSC;
         self.write_register(config::Register::FREQ2, ((freq >> 16) & 0xff) as u8)?;
         self.write_register(config::Register::FREQ1, ((freq >> 8) & 0xff) as u8)?;
         self.write_register(config::Register::FREQ0, (freq & 0xff) as u8)?;
@@ -64,7 +63,7 @@ where
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
         use config::*;
 
-        let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
+        let reset: u16 = (u16::from(SYNC1::default().bits())) << 8 | (u16::from(SYNC1::default().bits()));
 
         let (mode, word) = match sync_mode {
             SyncMode::Disabled => (SyncCheck::DISABLED, reset),
@@ -90,15 +89,9 @@ where
         use config::*;
 
         let (mode, addr) = match filter {
-            AddressFilter::Disabled => {
-                (AddressCheck::DISABLED, ADDR::default().bits())
-            }
-            AddressFilter::Device(addr) => {
-                (AddressCheck::SELF, addr)
-            }
-            AddressFilter::DeviceLowBroadcast(addr) => {
-                (AddressCheck::SELF_LOW_BROADCAST, addr)
-            }
+            AddressFilter::Disabled => (AddressCheck::DISABLED, ADDR::default().bits()),
+            AddressFilter::Device(addr) => (AddressCheck::SELF, addr),
+            AddressFilter::DeviceLowBroadcast(addr) => (AddressCheck::SELF_LOW_BROADCAST, addr),
             AddressFilter::DeviceHighLowBroadcast(addr) => {
                 (AddressCheck::SELF_HIGH_LOW_BROADCAST, addr)
             }
@@ -113,15 +106,9 @@ where
         use config::*;
 
         let (format, pktlen) = match length {
-            PacketLength::Fixed(limit) => {
-                (LengthConfig::FIXED, limit)
-            }
-            PacketLength::Variable(max_limit) => {
-                (LengthConfig::VARIABLE, max_limit)
-            }
-            PacketLength::Infinite => {
-                (LengthConfig::INFINITE, PKTLEN::default().bits())
-            }
+            PacketLength::Fixed(limit) => (LengthConfig::FIXED, limit),
+            PacketLength::Variable(max_limit) => (LengthConfig::VARIABLE, max_limit),
+            PacketLength::Infinite => (LengthConfig::INFINITE, PKTLEN::default().bits()),
         };
         self.modify_register(Register::PKTCTRL0, |r| {
             PKTCTRL0(r).modify().length_config(format.value()).bits()
@@ -283,8 +270,8 @@ where
     fn write_register(&mut self, reg: config::Register, byte: u8) -> Result<(), Error<E>> {
         self.cs.set_low();
 
-        let mut buffer = [reg.addr() | Access::WRITE_SINGLE.offset(), byte];
-        self.spi.write(&mut buffer)?;
+        let buffer = [reg.addr() | Access::WRITE_SINGLE.offset(), byte];
+        self.spi.write(&buffer)?;
 
         self.cs.set_high();
 

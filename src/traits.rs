@@ -6,11 +6,11 @@ pub(crate) trait OffsetSize {
 }
 
 impl OffsetSize for u8 {
-    fn offset(self) -> u8 {
+    fn offset(self) -> Self {
         self
     }
 
-    fn size(self) -> u8 {
+    fn size(self) -> Self {
         1
     }
 }

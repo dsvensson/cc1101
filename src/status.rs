@@ -1,4 +1,4 @@
-#[allow(dead_code,non_camel_case_types)]
+#[allow(dead_code, non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum Register {
     // Chip part number
@@ -28,7 +28,7 @@ pub enum Register {
     // Last RC Oscillator Calibration Result
     RCCTRL1_STATUS = 0xFC,
     // Last RC Oscillator Calibration Result
-    RCCTRL0_STATUS = 0xFD
+    RCCTRL0_STATUS = 0xFD,
 }
 
 impl Register {
@@ -124,5 +124,3 @@ register!(RCCTRL0_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
     rcctrl0_status @ 0..6,
 });
-
-
