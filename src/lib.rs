@@ -315,6 +315,7 @@ where
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn write_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
         self.cs.set_low();
 
@@ -512,6 +513,7 @@ enum GdoCfg {
     CLK_XOSC_192 = 0x3F,
 }
 
+#[allow(dead_code)]
 impl GdoCfg {
     fn value(&self) -> u8 {
         *self as u8
@@ -540,6 +542,7 @@ enum FifoThreshold {
     TX_1_RX_64 = 0x0F,
 }
 
+#[allow(dead_code)]
 impl FifoThreshold {
     fn value(&self) -> u8 {
         *self as u8
@@ -651,6 +654,7 @@ enum PoTimeout {
     EXPIRE_COUNT_256 = 0x03,
 }
 
+#[allow(dead_code)]
 impl PoTimeout {
     fn value(&self) -> u8 {
         *self as u8
