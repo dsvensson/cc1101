@@ -211,7 +211,7 @@ where
         Ok(())
     }
 
-    pub fn rx_bytes_available(&mut self) -> Result<u8, Error<E>> {
+    fn rx_bytes_available(&mut self) -> Result<u8, Error<E>> {
         use status::*;
 
         let mut last = 0;
@@ -235,19 +235,30 @@ where
     // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
     // to enter after fully receiving a packet.
     // Possible targets: IDLE, FSTON, TX, RX
-    pub fn receive(&mut self, buf: &mut [u8], rssi: &mut i16, lqi: &mut u8) -> Result<(), Error<E>> {
+    pub fn receive(
+        &mut self,
+        addr: &mut u8,
+        buf: &mut [u8],
+        rssi: &mut i16,
+        lqi: &mut u8,
+    ) -> Result<u8, Error<E>> {
         use status::*;
 
-        self.rx_bytes_available()?;
-
-        self.read_burst(Command::FIFO, buf)?;
-
-        *rssi = rssi_to_dbm(self.read_status(Register::RSSI)?);
-        *lqi = self.read_status(Register::LQI)?;
-
-        self.write_strobe(Command::SFRX)?;
-
-        Ok(())
+        match self.rx_bytes_available() {
+            Ok(_nbytes) => {
+                let mut length = 0u8;
+                self.read_fifo(addr, &mut length, buf)?;
+                *rssi = rssi_to_dbm(self.read_status(Register::RSSI)?);
+                *lqi = self.read_status(Register::LQI)?;
+                self.await_machine_state(MachineState::IDLE)?;
+                self.write_strobe(Command::SFRX)?;
+                Ok(length)
+            }
+            Err(err) => {
+                self.write_strobe(Command::SFRX)?;
+                Err(err)
+            }
+        }
     }
 
     fn read_register(&mut self, reg: config::Register) -> Result<u8, Error<E>> {
@@ -272,11 +283,17 @@ where
         Ok(buffer[1])
     }
 
-    fn read_burst(&mut self, com: Command, buf: &mut [u8]) -> Result<(), Error<E>> {
+    fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), Error<E>> {
+        let mut buffer = [Command::FIFO.addr() | Access::READ_BURST.offset(), 0, 0];
+
         self.cs.set_low();
-        buf[0] = com.addr() | Access::READ_BURST.offset();
+        self.spi.transfer(&mut buffer)?;
         self.spi.transfer(buf)?;
         self.cs.set_high();
+
+        *len = buffer[1];
+        *addr = buffer[2];
+
         Ok(())
     }
 
