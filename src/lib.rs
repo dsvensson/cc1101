@@ -68,6 +68,11 @@ where
         Ok(rssi_to_dbm(self.read_status(status::Register::RSSI)?))
     }
 
+    pub fn get_lqi(&mut self) -> Result<u8, Error<E>> {
+        let lqi = self.read_status(status::Register::LQI)?;
+        Ok(lqi & !(1u8 << 7))
+    }
+
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
         use config::*;
 
