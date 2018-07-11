@@ -23,6 +23,7 @@ use rssi::rssi_to_dbm;
 #[derive(Debug)]
 pub enum Error<E> {
     RxOverflow,
+    CrcMismatch,
     Spi(E),
 }
 
@@ -240,24 +241,21 @@ where
     // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
     // to enter after fully receiving a packet.
     // Possible targets: IDLE, FSTON, TX, RX
-    pub fn receive(
-        &mut self,
-        addr: &mut u8,
-        buf: &mut [u8],
-        rssi: &mut i16,
-        lqi: &mut u8,
-    ) -> Result<u8, Error<E>> {
+    pub fn receive(&mut self, addr: &mut u8, buf: &mut [u8]) -> Result<u8, Error<E>> {
         use status::*;
 
         match self.rx_bytes_available() {
             Ok(_nbytes) => {
                 let mut length = 0u8;
                 self.read_fifo(addr, &mut length, buf)?;
-                *rssi = rssi_to_dbm(self.read_status(Register::RSSI)?);
-                *lqi = self.read_status(Register::LQI)?;
+                let lqi = self.read_status(Register::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
                 self.write_strobe(Command::SFRX)?;
-                Ok(length)
+                if (lqi >> 7) != 1 {
+                    Err(Error::CrcMismatch)
+                } else {
+                    Ok(length)
+                }
             }
             Err(err) => {
                 self.write_strobe(Command::SFRX)?;
