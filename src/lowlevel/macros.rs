@@ -1,25 +1,24 @@
-
 macro_rules! register {
     ($REGISTER:ident, $reset_value:expr, $uxx:ty, {
         $(#[$($attr:tt)*] $bitfield:ident @ $range:expr,)+
     }) => {
         #[allow(non_camel_case_types)]
         #[derive(Clone, Copy)]
-        pub(crate) struct $REGISTER<MODE> {
+        pub struct $REGISTER<MODE> {
             bits: $uxx,
             _mode: ::core::marker::PhantomData<MODE>,
         }
 
-        impl $REGISTER<::traits::Mask> {
+        impl $REGISTER<::lowlevel::traits::Mask> {
             #[allow(dead_code)]
-            pub(crate) fn mask() -> $REGISTER<::traits::Mask> {
+            pub fn mask() -> $REGISTER<::lowlevel::traits::Mask> {
                 $REGISTER { bits: 0, _mode: ::core::marker::PhantomData }
             }
 
             $(
                 #[allow(dead_code)]
-                pub(crate) fn $bitfield(&self) -> $uxx {
-                    use ::traits::OffsetSize;
+                pub fn $bitfield(&self) -> $uxx {
+                    use lowlevel::traits::OffsetSize;
 
                     let size = $range.size() + 1;
                     let offset = $range.offset();
@@ -28,7 +27,7 @@ macro_rules! register {
             )+
         }
 
-        impl ::core::default::Default for $REGISTER<::traits::W> {
+        impl ::core::default::Default for $REGISTER<::lowlevel::traits::W> {
             fn default() -> Self {
                 $REGISTER { bits: $reset_value, _mode: ::core::marker::PhantomData }
             }
@@ -36,21 +35,21 @@ macro_rules! register {
 
         #[allow(non_snake_case)]
         #[allow(dead_code)]
-        pub(crate) fn $REGISTER(bits: $uxx) -> $REGISTER<::traits::R> {
+        pub fn $REGISTER(bits: $uxx) -> $REGISTER<::lowlevel::traits::R> {
             $REGISTER { bits, _mode: ::core::marker::PhantomData }
         }
 
-        impl $REGISTER<::traits::R> {
+        impl $REGISTER<::lowlevel::traits::R> {
             #[allow(dead_code)]
-            pub(crate) fn modify(self) -> $REGISTER<::traits::W> {
+            pub fn modify(self) -> $REGISTER<::lowlevel::traits::W> {
                 $REGISTER { bits: self.bits, _mode: ::core::marker::PhantomData }
             }
 
             $(
                 #[$($attr)*]
                 #[allow(dead_code)]
-                pub(crate) fn $bitfield(&self) -> $uxx {
-                    use ::traits::OffsetSize;
+                pub fn $bitfield(&self) -> $uxx {
+                    use lowlevel::traits::OffsetSize;
 
                     let offset = $range.offset();
                     let size = $range.size() + 1;
@@ -61,17 +60,17 @@ macro_rules! register {
             )+
         }
 
-        impl $REGISTER<::traits::W> {
+        impl $REGISTER<::lowlevel::traits::W> {
             #[allow(dead_code)]
-            pub(crate) fn bits(self) -> $uxx {
+            pub fn bits(self) -> $uxx {
                 self.bits
             }
 
             $(
                 #[$($attr)*]
                 #[allow(dead_code)]
-                pub(crate) fn $bitfield(&mut self, mut bits: $uxx) -> &mut Self {
-                    use ::traits::OffsetSize;
+                pub fn $bitfield(&mut self, mut bits: $uxx) -> &mut Self {
+                    use lowlevel::traits::OffsetSize;
 
                     let offset = $range.offset();
                     let size = $range.size() + 1;

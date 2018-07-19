@@ -1,39 +1,45 @@
-#[allow(dead_code,non_camel_case_types)]
+#[allow(dead_code, non_camel_case_types)]
 #[derive(Clone, Copy)]
-pub enum Register {
-    // Chip part number
-    PARTNUM = 0xF0,
-    // Chip version number
-    VERSION = 0xF1,
-    // Frequency Offset Estimate from Demodulator
-    FREQEST = 0xF2,
-    // Demodulator Estimate for Link Quality
-    LQI = 0xF3,
-    // Received Signal Strength Indication
-    RSSI = 0xF4,
-    // Main Radio Control State Machine State
-    MARCSTATE = 0xF5,
-    // High Byte of WOR Time
-    WORTIME1 = 0xF6,
-    // Low Byte of WOR Time
-    WORTIME0 = 0xF7,
-    // Current GDOx Status and Packet Status
-    PKTSTATUS = 0xF8,
-    // Current Setting from PLL Calibration Module
-    VCO_VC_DAC = 0xF9,
-    // Underflow and Number of Bytes
-    TXBYTES = 0xFA,
-    // Overflow and Number of Bytes
-    RXBYTES = 0xFB,
-    // Last RC Oscillator Calibration Result
-    RCCTRL1_STATUS = 0xFC,
-    // Last RC Oscillator Calibration Result
-    RCCTRL0_STATUS = 0xFD
+pub enum Status {
+    /// Chip part number
+    PARTNUM = 0x30,
+    /// Chip version number
+    VERSION = 0x31,
+    /// Frequency Offset Estimate from Demodulator
+    FREQEST = 0x32,
+    /// Demodulator Estimate for Link Quality
+    LQI = 0x33,
+    /// Received Signal Strength Indication
+    RSSI = 0x34,
+    /// Main Radio Control State Machine State
+    MARCSTATE = 0x35,
+    /// High Byte of WOR Time
+    WORTIME1 = 0x36,
+    /// Low Byte of WOR Time
+    WORTIME0 = 0x37,
+    /// Current GDOx Status and Packet Status
+    PKTSTATUS = 0x38,
+    /// Current Setting from PLL Calibration Module
+    VCO_VC_DAC = 0x39,
+    /// Underflow and Number of Bytes
+    TXBYTES = 0x3A,
+    /// Overflow and Number of Bytes
+    RXBYTES = 0x3B,
+    /// Last RC Oscillator Calibration Result
+    RCCTRL1_STATUS = 0x3C,
+    /// Last RC Oscillator Calibration Result
+    RCCTRL0_STATUS = 0x3D,
 }
 
-impl Register {
-    pub(crate) fn addr(&self) -> u8 {
+impl Status {
+    pub fn addr(&self) -> u8 {
         *self as u8
+    }
+}
+
+impl Into<::lowlevel::registers::Register> for Status {
+    fn into(self) -> ::lowlevel::registers::Register {
+        ::lowlevel::registers::Register::Status(self)
     }
 }
 
@@ -124,5 +130,3 @@ register!(RCCTRL0_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
     rcctrl0_status @ 0..6,
 });
-
-

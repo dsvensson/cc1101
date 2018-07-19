@@ -1,105 +1,111 @@
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
-pub enum Register {
-    // GDO2 output pin configuration
+pub enum Config {
+    /// GDO2 output pin configuration
     IOCFG2 = 0x00,
-    // GDO1 output pin configuration
+    /// GDO1 output pin configuration
     IOCFG1 = 0x01,
-    // GDO0 output pin configuration
+    /// GDO0 output pin configuration
     IOCFG0 = 0x02,
-    // RX FIFO and TX FIFO thresholds
+    /// RX FIFO and TX FIFO thresholds
     FIFOTHR = 0x03,
-    // Sync word, high byte
+    /// Sync word, high byte
     SYNC1 = 0x04,
-    // Sync word, low byte
+    /// Sync word, low byte
     SYNC0 = 0x05,
-    // Packet length
+    /// Packet length
     PKTLEN = 0x06,
-    // Packet automation control
+    /// Packet automation control
     PKTCTRL1 = 0x07,
-    // Packet automation control
+    /// Packet automation control
     PKTCTRL0 = 0x08,
-    // Device address
+    /// Device address
     ADDR = 0x09,
-    // Channel number
+    /// Channel number
     CHANNR = 0x0A,
-    // Frequency synthesizer control
+    /// Frequency synthesizer control
     FSCTRL1 = 0x0B,
-    // Frequency synthesizer control
+    /// Frequency synthesizer control
     FSCTRL0 = 0x0C,
-    // Frequency control word, high byte
+    /// Frequency control word, high byte
     FREQ2 = 0x0D,
-    // Frequency control word, middle byte
+    /// Frequency control word, middle byte
     FREQ1 = 0x0E,
-    // Frequency control word, low byte
+    /// Frequency control word, low byte
     FREQ0 = 0x0F,
-    // Modem configuration
+    /// Modem configuration
     MDMCFG4 = 0x10,
-    // Modem configuration
+    /// Modem configuration
     MDMCFG3 = 0x11,
-    // Modem configuration
+    /// Modem configuration
     MDMCFG2 = 0x12,
-    // Modem configuration
+    /// Modem configuration
     MDMCFG1 = 0x13,
-    // Modem configuration
+    /// Modem configuration
     MDMCFG0 = 0x14,
-    // Modem deviation setting
+    /// Modem deviation setting
     DEVIATN = 0x15,
-    // Main Radio Cntrl State Machine config
+    /// Main Radio Cntrl State Machine config
     MCSM2 = 0x16,
-    // Main Radio Cntrl State Machine config
+    /// Main Radio Cntrl State Machine config
     MCSM1 = 0x17,
-    // Main Radio Cntrl State Machine config
+    /// Main Radio Cntrl State Machine config
     MCSM0 = 0x18,
-    // Frequency Offset Compensation config
+    /// Frequency Offset Compensation config
     FOCCFG = 0x19,
-    // Bit Synchronization configuration
+    /// Bit Synchronization configuration
     BSCFG = 0x1A,
-    // AGC control
+    /// AGC control
     AGCCTRL2 = 0x1B,
-    // AGC control
+    /// AGC control
     AGCCTRL1 = 0x1C,
-    // AGC control
+    /// AGC control
     AGCCTRL0 = 0x1D,
-    // High byte Event 0 timeout
+    /// High byte Event 0 timeout
     WOREVT1 = 0x1E,
-    // Low byte Event 0 timeout
+    /// Low byte Event 0 timeout
     WOREVT0 = 0x1F,
-    // Wake On Radio control
+    /// Wake On Radio control
     WORCTRL = 0x20,
-    // Front end RX configuration
+    /// Front end RX configuration
     FREND1 = 0x21,
-    // Front end TX configuration
+    /// Front end TX configuration
     FREND0 = 0x22,
-    // Frequency synthesizer calibration
+    /// Frequency synthesizer calibration
     FSCAL3 = 0x23,
-    // Frequency synthesizer calibration
+    /// Frequency synthesizer calibration
     FSCAL2 = 0x24,
-    // Frequency synthesizer calibration
+    /// Frequency synthesizer calibration
     FSCAL1 = 0x25,
-    // Frequency synthesizer calibration
+    /// Frequency synthesizer calibration
     FSCAL0 = 0x26,
-    // RC oscillator configuration
+    /// RC oscillator configuration
     RCCTRL1 = 0x27,
-    // RC oscillator configuration
+    /// RC oscillator configuration
     RCCTRL0 = 0x28,
-    // Frequency synthesizer cal control
+    /// Frequency synthesizer cal control
     FSTEST = 0x29,
-    // Production test
+    /// Production test
     PTEST = 0x2A,
-    // AGC test
+    /// AGC test
     AGCTEST = 0x2B,
-    // Various test settings
+    /// Various test settings
     TEST2 = 0x2C,
-    // Various test settings
+    /// Various test settings
     TEST1 = 0x2D,
-    // Various test settings
+    /// Various test settings
     TEST0 = 0x2E,
 }
 
-impl Register {
-    pub(crate) fn addr(&self) -> u8 {
+impl Config {
+    pub fn addr(&self) -> u8 {
         *self as u8
+    }
+}
+
+impl Into<::lowlevel::registers::Register> for Config {
+    fn into(self) -> ::lowlevel::registers::Register {
+        ::lowlevel::registers::Register::Config(self)
     }
 }
 
@@ -195,17 +201,17 @@ register!(FSCTRL0, 0b0000_0000, u8, {
 });
 
 register!(FREQ2, 0b0001_1110, u8, {
-    #[doc = "FREQ[23:0] is the base frequency for the frequency synthesiser"]
+    #[doc = "FREQ\\[23:0\\] is the base frequency for the frequency synthesiser"]
     freq @ 0..5,
 });
 
 register!(FREQ1, 0b1100_0100, u8, {
-    #[doc = "FREQ[15:8], see FREQ2"]
+    #[doc = "FREQ\\[15:8\\], see FREQ2"]
     freq @ 0..7,
 });
 
 register!(FREQ0, 0b1110_1100, u8, {
-    #[doc = "FREQ[7:0], see FREQ2"]
+    #[doc = "FREQ\\[7:0\\], see FREQ2"]
     freq @ 0..7,
 });
 
