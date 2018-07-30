@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum NumPreamble {
@@ -12,7 +11,6 @@ pub enum NumPreamble {
     N_24 = 0x07,
 }
 
-#[allow(dead_code)]
 impl NumPreamble {
     pub fn value(&self) -> u8 {
         *self as u8

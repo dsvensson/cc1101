@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub enum Config {
     /// GDO2 output pin configuration

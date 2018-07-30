@@ -1,4 +1,4 @@
-#[allow(dead_code, non_camel_case_types)]
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum Status {
     /// Chip part number

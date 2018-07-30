@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 pub enum Mode {
     Single = 0x00,
     Burst = 0x40,

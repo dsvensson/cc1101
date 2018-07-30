@@ -10,13 +10,11 @@ macro_rules! register {
         }
 
         impl $REGISTER<::lowlevel::traits::Mask> {
-            #[allow(dead_code)]
             pub fn mask() -> $REGISTER<::lowlevel::traits::Mask> {
                 $REGISTER { bits: 0, _mode: ::core::marker::PhantomData }
             }
 
             $(
-                #[allow(dead_code)]
                 pub fn $bitfield(&self) -> $uxx {
                     use lowlevel::traits::OffsetSize;
 
@@ -34,20 +32,17 @@ macro_rules! register {
         }
 
         #[allow(non_snake_case)]
-        #[allow(dead_code)]
         pub fn $REGISTER(bits: $uxx) -> $REGISTER<::lowlevel::traits::R> {
             $REGISTER { bits, _mode: ::core::marker::PhantomData }
         }
 
         impl $REGISTER<::lowlevel::traits::R> {
-            #[allow(dead_code)]
             pub fn modify(self) -> $REGISTER<::lowlevel::traits::W> {
                 $REGISTER { bits: self.bits, _mode: ::core::marker::PhantomData }
             }
 
             $(
                 #[$($attr)*]
-                #[allow(dead_code)]
                 pub fn $bitfield(&self) -> $uxx {
                     use lowlevel::traits::OffsetSize;
 
@@ -61,14 +56,12 @@ macro_rules! register {
         }
 
         impl $REGISTER<::lowlevel::traits::W> {
-            #[allow(dead_code)]
             pub fn bits(self) -> $uxx {
                 self.bits
             }
 
             $(
                 #[$($attr)*]
-                #[allow(dead_code)]
                 pub fn $bitfield(&mut self, mut bits: $uxx) -> &mut Self {
                     use lowlevel::traits::OffsetSize;
 

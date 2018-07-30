@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum FifoThreshold {
@@ -20,7 +19,6 @@ pub enum FifoThreshold {
     TX_1_RX_64 = 0x0F,
 }
 
-#[allow(dead_code)]
 impl FifoThreshold {
     pub fn value(&self) -> u8 {
         *self as u8
