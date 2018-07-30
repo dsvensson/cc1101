@@ -1,12 +1,8 @@
-//#![deny(missing_docs)]
-//#![deny(warnings)]
-#![feature(unsize)]
 #![no_std]
 
 extern crate embedded_hal as hal;
 
 use hal::blocking::spi::{Transfer, Write};
-//use hal::spi::{Mode, Phase, Polarity};
 use hal::digital::OutputPin;
 
 const FXOSC: u64 = 26_000_000;
