@@ -15,10 +15,14 @@ use lowlevel::registers::*;
 use lowlevel::types::*;
 use rssi::rssi_to_dbm;
 
+/// CC1101 errors.
 #[derive(Debug)]
 pub enum Error<E> {
+    /// The RX FIFO buffer overflowed, too small buffer for configured packet length.
     RxOverflow,
+    /// Corrupt packet received with invalid CRC.
     CrcMismatch,
+    /// Platform-dependent SPI-errors, such as IO errors.
     Spi(E),
 }
 
@@ -28,6 +32,7 @@ impl<E> From<E> for Error<E> {
     }
 }
 
+/// High level API for interacting with the CC1101 radio chip.
 pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
 
 impl<SPI, CS, E> Cc1101<SPI, CS>
@@ -53,15 +58,18 @@ where
         Ok((partnum, version))
     }
 
+    /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
     pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<E>> {
         Ok(rssi_to_dbm(self.0.read_register(Status::RSSI)?))
     }
 
+    /// The Link Quality Indicator metric of the current quality of the received signal.
     pub fn get_lqi(&mut self) -> Result<u8, Error<E>> {
         let lqi = self.0.read_register(Status::LQI)?;
         Ok(lqi & !(1u8 << 7))
     }
 
+    /// Configure the sync word to use, and at what level it should be verified.
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
         let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
 
@@ -79,6 +87,7 @@ where
         Ok(())
     }
 
+    /// Configure signal modulation.
     pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<E>> {
         use lowlevel::types::ModFormat as MF;
 
@@ -95,6 +104,7 @@ where
         Ok(())
     }
 
+    /// Configure device address, and address filtering.
     pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<E>> {
         use lowlevel::types::AddressCheck as AC;
 
@@ -111,6 +121,7 @@ where
         Ok(())
     }
 
+    /// Configure packet mode, and length.
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
         use lowlevel::types::LengthConfig as LC;
 
@@ -126,6 +137,7 @@ where
         Ok(())
     }
 
+    /// Set radio in Receive/Transmit/Idle mode.
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<E>> {
         let target = match radio_mode {
             RadioMode::Receive => {
@@ -146,6 +158,7 @@ where
         self.await_machine_state(target)
     }
 
+    /// Configure some default settings, to be removed in the future.
     #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         self.0.write_strobe(Command::SRES)?;
@@ -242,36 +255,57 @@ where
     }
 }
 
+/// Modulation format configuration.
 pub enum Modulation {
+    /// 2-FSK.
     BinaryFrequencyShiftKeying,
+    /// GFSK.
     GaussianFrequencyShiftKeying,
+    /// ASK / OOK.
     OnOffKeying,
+    /// 4-FSK.
     FourFrequencyShiftKeying,
+    /// MSK.
     MinimumShiftKeying,
 }
 
+/// Packet length configuration.
 pub enum PacketLength {
+    /// Set packet length to a fixed value.
     Fixed(u8),
+    /// Set upper bound of variable packet length.
     Variable(u8),
+    /// Infinite packet length, streaming mode.
     Infinite,
 }
 
+/// Address check configuration.
 pub enum AddressFilter {
+    /// No address check.
     Disabled,
+    /// Address check, no broadcast.
     Device(u8),
+    /// Address check and 0 (0x00) broadcast.
     DeviceLowBroadcast(u8),
+    /// Address check and 0 (0x00) and 255 (0xFF) broadcast.
     DeviceHighLowBroadcast(u8),
 }
 
+/// Radio operational mode.
 pub enum RadioMode {
     Receive,
     Transmit,
     Idle,
 }
 
+/// Sync word configuration.
 pub enum SyncMode {
+    /// No sync word.
     Disabled,
+    /// Match 15 of 16 bits of given sync word.
     MatchPartial(u16),
+    /// Match 30 of 32 bits of a repetition of given sync word.
     MatchPartialRepeated(u16),
+    /// Match 16 of 16 bits of given sync word.
     MatchFull(u16),
 }

@@ -1,3 +1,4 @@
+//! Low level unrestricted access to the CC1101 radio chip.
 use hal::blocking::spi::{Transfer, Write};
 use hal::digital::OutputPin;
 

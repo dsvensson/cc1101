@@ -1,3 +1,4 @@
+/// Number of preamble bytes to be transmitted.
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum NumPreamble {
