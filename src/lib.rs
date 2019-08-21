@@ -3,7 +3,7 @@
 extern crate embedded_hal as hal;
 
 use hal::blocking::spi::{Transfer, Write};
-use hal::digital::OutputPin;
+use hal::digital::v2::OutputPin;
 
 const FXOSC: u64 = 26_000_000;
 
@@ -38,7 +38,7 @@ pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
 impl<SPI, CS, E> Cc1101<SPI, CS>
 where
     SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
-    CS: OutputPin,
+    CS: OutputPin<Error = E>,
 {
     pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
         Ok(Cc1101(lowlevel::Cc1101::new(spi, cs)?))

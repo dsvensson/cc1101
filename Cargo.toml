@@ -11,4 +11,4 @@ repository = "https://github.com/dsvensson/cc1101"
 
 
 [dependencies]
-embedded-hal = "0.2.0"
+embedded-hal = "0.2.3"

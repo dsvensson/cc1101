@@ -1,6 +1,6 @@
 //! Low level unrestricted access to the CC1101 radio chip.
 use hal::blocking::spi::{Transfer, Write};
-use hal::digital::OutputPin;
+use hal::digital::v2::OutputPin;
 
 #[macro_use]
 mod macros;
@@ -22,7 +22,7 @@ pub struct Cc1101<SPI, CS> {
 impl<SPI, CS, E> Cc1101<SPI, CS>
 where
     SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
-    CS: OutputPin,
+    CS: OutputPin<Error = E>,
 {
     pub fn new(spi: SPI, cs: CS) -> Result<Self, E> {
         let cc1101 = Cc1101 {
@@ -36,20 +36,20 @@ where
     where
         R: Into<Register>,
     {
-        self.cs.set_low();
+        self.cs.set_low()?;
         let mut buffer = [reg.into().raddr(), 0u8];
         self.spi.transfer(&mut buffer)?;
-        self.cs.set_high();
+        self.cs.set_high()?;
         Ok(buffer[1])
     }
 
     pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), E> {
         let mut buffer = [Command::FIFO.addr() | 0xC0, 0, 0];
 
-        self.cs.set_low();
+        self.cs.set_low()?;
         self.spi.transfer(&mut buffer)?;
         self.spi.transfer(buf)?;
-        self.cs.set_high();
+        self.cs.set_high()?;
 
         *len = buffer[1];
         *addr = buffer[2];
@@ -58,9 +58,9 @@ where
     }
 
     pub fn write_strobe(&mut self, com: Command) -> Result<(), E> {
-        self.cs.set_low();
+        self.cs.set_low()?;
         self.spi.write(&[com.addr()])?;
-        self.cs.set_high();
+        self.cs.set_high()?;
         Ok(())
     }
 
@@ -68,9 +68,9 @@ where
     where
         R: Into<Register>,
     {
-        self.cs.set_low();
+        self.cs.set_low()?;
         self.spi.write(&mut [reg.into().waddr(), byte])?;
-        self.cs.set_high();
+        self.cs.set_high()?;
         Ok(())
     }
 
