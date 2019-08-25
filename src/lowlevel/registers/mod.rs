@@ -32,3 +32,7 @@ impl Register {
         }
     }
 }
+
+pub trait RegisterClass: From<u8> + Into<u8> {
+    const REGISTER_CLASS: Register;
+}

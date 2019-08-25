@@ -1,28 +1,12 @@
 macro_rules! register {
-    ($REGISTER:ident, $reset_value:expr, $uxx:ty, {
+    ($PARENT:ident, $REGISTER:ident, $reset_value:expr, $uxx:ty, {
         $(#[$($attr:tt)*] $bitfield:ident @ $range:expr,)+
     }) => {
         #[allow(non_camel_case_types)]
         #[derive(Clone, Copy)]
-        pub struct $REGISTER<MODE> {
-            bits: $uxx,
+        pub struct $REGISTER<MODE=::lowlevel::traits::R> {
+            bits: u8,
             _mode: ::core::marker::PhantomData<MODE>,
-        }
-
-        impl $REGISTER<::lowlevel::traits::Mask> {
-            pub fn mask() -> $REGISTER<::lowlevel::traits::Mask> {
-                $REGISTER { bits: 0, _mode: ::core::marker::PhantomData }
-            }
-
-            $(
-                pub fn $bitfield(&self) -> $uxx {
-                    use lowlevel::traits::OffsetSize;
-
-                    let size = $range.size() + 1;
-                    let offset = $range.offset();
-                    (((1 << size) - 1) as u8) << offset
-                }
-            )+
         }
 
         impl ::core::default::Default for $REGISTER<::lowlevel::traits::W> {
@@ -36,7 +20,12 @@ macro_rules! register {
             $REGISTER { bits, _mode: ::core::marker::PhantomData }
         }
 
+        impl ::lowlevel::registers::RegisterClass for $REGISTER<::lowlevel::traits::R> {
+            const REGISTER_CLASS: ::lowlevel::registers::Register = ::lowlevel::registers::Register::$PARENT($PARENT::$REGISTER);
+        }
+
         impl $REGISTER<::lowlevel::traits::R> {
+
             pub fn modify(self) -> $REGISTER<::lowlevel::traits::W> {
                 $REGISTER { bits: self.bits, _mode: ::core::marker::PhantomData }
             }
@@ -78,6 +67,24 @@ macro_rules! register {
                     self
                 }
             )+
+        }
+
+        impl Into<::lowlevel::registers::Register> for $REGISTER<::lowlevel::traits::R> {
+            fn into(self) -> ::lowlevel::registers::Register {
+                ::lowlevel::registers::Register::$PARENT($PARENT::$REGISTER)
+            }
+        }
+
+        impl Into<u8> for $REGISTER<::lowlevel::traits::R> {
+            fn into(self) -> u8{
+                self.bits
+            }
+        }
+
+        impl From<u8> for $REGISTER<::lowlevel::traits::R> {
+            fn from(val: u8) -> Self {
+                $REGISTER { bits: val, _mode: ::core::marker::PhantomData }
+            }
         }
     }
 }

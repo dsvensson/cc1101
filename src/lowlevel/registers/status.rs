@@ -43,49 +43,49 @@ impl Into<::lowlevel::registers::Register> for Status {
     }
 }
 
-register!(PARTNUM, 0b0000_0000, u8, {
+register!(Status, PARTNUM, 0b0000_0000, u8, {
     #[doc = "Chip part number"]
     partnum @ 0..7,
 });
 
-register!(VERSION, 0b0001_0100, u8, {
+register!(Status, VERSION, 0b0001_0100, u8, {
     #[doc = "Chip version number"]
     version @ 0..7,
 });
 
-register!(FREQEST, 0b0000_0000, u8, {
+register!(Status, FREQEST, 0b0000_0000, u8, {
     #[doc = "The estimated frequency offset (2’s complement) of the carrier"]
     freqoff_est @ 0..7,
 });
 
-register!(LQI, 0b0000_0000, u8, {
+register!(Status, LQI, 0b0000_0000, u8, {
     #[doc = "The last CRC comparison matched."]
     crc_ok @ 7,
     #[doc = "The Link Quality Indicator estimates how easily a received signal can be demodulated"]
     lqi @ 0..6,
 });
 
-register!(RSSI, 0b0000_0000, u8, {
+register!(Status, RSSI, 0b0000_0000, u8, {
     #[doc = "Received signal strength indicator"]
     rssi @ 0..7,
 });
 
-register!(MARCSTATE, 0b0000_0000, u8, {
+register!(Status, MARCSTATE, 0b0000_0000, u8, {
     #[doc = "Main Radio Control FSM State"]
     marc_state @ 0..4,
 });
 
-register!(WORTIME1, 0b0000_0000, u8, {
+register!(Status, WORTIME1, 0b0000_0000, u8, {
     #[doc = "High byte of timer value in WOR module"]
     time @ 0..7,
 });
 
-register!(WORTIME0, 0b0000_0000, u8, {
+register!(Status, WORTIME0, 0b0000_0000, u8, {
     #[doc = "Low byte of timer value in WOR module"]
     time @ 0..7,
 });
 
-register!(PKTSTATUS, 0b0000_0000, u8, {
+register!(Status, PKTSTATUS, 0b0000_0000, u8, {
     #[doc = "The last CRC comparison matched"]
     crc_ok @ 7,
     #[doc = "Carrier sense"]
@@ -102,31 +102,31 @@ register!(PKTSTATUS, 0b0000_0000, u8, {
     gdo0 @ 0,
 });
 
-register!(VCO_VC_DAC, 0b0000_0000, u8, {
+register!(Status, VCO_VC_DAC, 0b0000_0000, u8, {
     #[doc = "Status register for test only"]
     vco_vc_dac @ 0..7,
 });
 
-register!(TXBYTES, 0b0000_0000, u8, {
+register!(Status, TXBYTES, 0b0000_0000, u8, {
     #[doc = "TX FIFO underflow"]
     txfifo_underflow @ 7,
     #[doc = "Number of bytes in TX FIFO"]
     num_txbytes @ 0..6,
 });
 
-register!(RXBYTES, 0b0000_0000, u8, {
+register!(Status, RXBYTES, 0b0000_0000, u8, {
     #[doc = "RX FIFO overflow"]
     rxfifo_overflow @ 7,
     #[doc = "Number of bytes in RX FIFO"]
     num_rxbytes @ 0..6,
 });
 
-register!(RCCTRL1_STATUS, 0b0000_0000, u8, {
+register!(Status, RCCTRL1_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
     rcctrl1_status @ 0..6,
 });
 
-register!(RCCTRL0_STATUS, 0b0000_0000, u8, {
+register!(Status, RCCTRL0_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
     rcctrl0_status @ 0..6,
 });

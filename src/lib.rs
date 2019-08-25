@@ -46,27 +46,27 @@ where
 
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
         let freq = hz * 1u64.rotate_left(16) / FXOSC;
-        self.0.write_register(Config::FREQ2, ((freq >> 16) & 0xff) as u8)?;
-        self.0.write_register(Config::FREQ1, ((freq >> 8) & 0xff) as u8)?;
-        self.0.write_register(Config::FREQ0, (freq & 0xff) as u8)?;
+        self.0.write_register::<FREQ2>(((freq >> 16) & 0xff) as u8)?;
+        self.0.write_register::<FREQ1>(((freq >> 8) & 0xff) as u8)?;
+        self.0.write_register::<FREQ0>((freq & 0xff) as u8)?;
         Ok(())
     }
 
     pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
-        let partnum = self.0.read_register(Status::PARTNUM)?;
-        let version = self.0.read_register(Status::VERSION)?;
-        Ok((partnum, version))
+        let partnum = self.0.read_register::<PARTNUM>()?;
+        let version = self.0.read_register::<VERSION>()?;
+        Ok((partnum.partnum(), version.version()))
     }
 
     /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
     pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<E>> {
-        Ok(rssi_to_dbm(self.0.read_register(Status::RSSI)?))
+        Ok(rssi_to_dbm(self.0.read_register::<RSSI>()?.into()))
     }
 
     /// The Link Quality Indicator metric of the current quality of the received signal.
     pub fn get_lqi(&mut self) -> Result<u8, Error<E>> {
-        let lqi = self.0.read_register(Status::LQI)?;
-        Ok(lqi & !(1u8 << 7))
+        let lqi = self.0.read_register::<LQI>()?;
+        Ok(lqi.lqi())
     }
 
     /// Configure the sync word to use, and at what level it should be verified.
@@ -79,11 +79,9 @@ where
             SyncMode::MatchPartialRepeated(word) => (SyncCheck::CHECK_30_32, word),
             SyncMode::MatchFull(word) => (SyncCheck::CHECK_16_16, word),
         };
-        self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().sync_mode(mode.value()).bits()
-        })?;
-        self.0.write_register(Config::SYNC1, ((word >> 8) & 0xff) as u8)?;
-        self.0.write_register(Config::SYNC0, (word & 0xff) as u8)?;
+        self.0.modify_register(|r: MDMCFG2| r.modify().sync_mode(mode.value()).bits())?;
+        self.0.write_register::<SYNC1>(((word >> 8) & 0xff) as u8)?;
+        self.0.write_register::<SYNC0>((word & 0xff) as u8)?;
         Ok(())
     }
 
@@ -98,9 +96,7 @@ where
             Modulation::FourFrequencyShiftKeying => MF::MOD_4FSK,
             Modulation::MinimumShiftKeying => MF::MOD_MSK,
         };
-        self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().mod_format(value.value()).bits()
-        })?;
+        self.0.modify_register(|r: MDMCFG2| r.modify().mod_format(value.value()).bits())?;
         Ok(())
     }
 
@@ -114,10 +110,8 @@ where
             AddressFilter::DeviceLowBroadcast(addr) => (AC::SELF_LOW_BROADCAST, addr),
             AddressFilter::DeviceHighLowBroadcast(addr) => (AC::SELF_HIGH_LOW_BROADCAST, addr),
         };
-        self.0.modify_register(Config::PKTCTRL1, |r| {
-            PKTCTRL1(r).modify().adr_chk(mode.value()).bits()
-        })?;
-        self.0.write_register(Config::ADDR, addr)?;
+        self.0.modify_register(|r: PKTCTRL1| r.modify().adr_chk(mode.value()).bits())?;
+        self.0.write_register::<ADDR>(addr)?;
         Ok(())
     }
 
@@ -130,10 +124,8 @@ where
             PacketLength::Variable(max_limit) => (LC::VARIABLE, max_limit),
             PacketLength::Infinite => (LC::INFINITE, PKTLEN::default().bits()),
         };
-        self.0.modify_register(Config::PKTCTRL0, |r| {
-            PKTCTRL0(r).modify().length_config(format.value()).bits()
-        })?;
-        self.0.write_register(Config::PKTLEN, pktlen)?;
+        self.0.modify_register(|r: PKTCTRL0| r.modify().length_config(format.value()).bits())?;
+        self.0.write_register::<PKTLEN>(pktlen)?;
         Ok(())
     }
 
@@ -163,38 +155,38 @@ where
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         self.0.write_strobe(Command::SRES)?;
 
-        self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
+        self.0.write_register::<PKTCTRL0>(PKTCTRL0::default()
             .white_data(0).bits()
         )?;
 
-        self.0.write_register(Config::FSCTRL1, FSCTRL1::default()
+        self.0.write_register::<FSCTRL1>(FSCTRL1::default()
             .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
         )?;
 
-        self.0.write_register(Config::MDMCFG4, MDMCFG4::default()
+        self.0.write_register::<MDMCFG4>(MDMCFG4::default()
             .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
             .chanbw_m(0x00)
             .drate_e(0x0A).bits()
         )?;
 
-        self.0.write_register(Config::MDMCFG3, MDMCFG3::default()
+        self.0.write_register::<MDMCFG3>(MDMCFG3::default()
             .drate_m(0x83).bits() // r_data = (((256 + drate_m) * 2^drate_e) / 2**38) * f_osc
         )?;
 
-        self.0.write_register(Config::MDMCFG2, MDMCFG2::default()
+        self.0.write_register::<MDMCFG2>(MDMCFG2::default()
             .dem_dcfilt_off(1).bits()
         )?;
 
-        self.0.write_register(Config::DEVIATN, DEVIATN::default()
+        self.0.write_register::<DEVIATN>(DEVIATN::default()
             .deviation_e(0x03)
             .deviation_m(0x05).bits()
         )?;
 
-        self.0.write_register(Config::MCSM0, MCSM0::default()
+        self.0.write_register::<MCSM0>(MCSM0::default()
             .fs_autocal(AutoCalibration::FROM_IDLE.value()).bits()
         )?;
 
-        self.0.write_register(Config::AGCCTRL2, AGCCTRL2::default()
+        self.0.write_register::<AGCCTRL2>(AGCCTRL2::default()
             .max_lna_gain(0x04).bits()
         )?;
 
@@ -203,7 +195,7 @@ where
 
     fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
         loop {
-            let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
+            let marcstate = self.0.read_register::<MARCSTATE>()?;
             if target.value() == marcstate.marc_state() {
                 break;
             }
@@ -215,7 +207,7 @@ where
         let mut last = 0;
 
         loop {
-            let rxbytes = RXBYTES(self.0.read_register(Status::RXBYTES)?);
+            let rxbytes = self.0.read_register::<RXBYTES>()?;
             if rxbytes.rxfifo_overflow() == 1 {
                 return Err(Error::RxOverflow);
             }
@@ -238,10 +230,10 @@ where
             Ok(_nbytes) => {
                 let mut length = 0u8;
                 self.0.read_fifo(addr, &mut length, buf)?;
-                let lqi = self.0.read_register(Status::LQI)?;
+                let lqi = self.0.read_register::<LQI>()?;
                 self.await_machine_state(MachineState::IDLE)?;
                 self.0.write_strobe(Command::SFRX)?;
-                if (lqi >> 7) != 1 {
+                if lqi.crc_ok() != 1 {
                     Err(Error::CrcMismatch)
                 } else {
                     Ok(length)

@@ -32,15 +32,15 @@ where
         Ok(cc1101)
     }
 
-    pub fn read_register<R>(&mut self, reg: R) -> Result<u8, E>
+    pub fn read_register<R>(&mut self) -> Result<R, E>
     where
-        R: Into<Register>,
+        R: RegisterClass,
     {
         self.cs.set_low()?;
-        let mut buffer = [reg.into().raddr(), 0u8];
+        let mut buffer = [R::REGISTER_CLASS.raddr(), 0u8];
         self.spi.transfer(&mut buffer)?;
         self.cs.set_high()?;
-        Ok(buffer[1])
+        Ok(From::<u8>::from(buffer[1]))
     }
 
     pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), E> {
@@ -64,23 +64,23 @@ where
         Ok(())
     }
 
-    pub fn write_register<R>(&mut self, reg: R, byte: u8) -> Result<(), E>
+    pub fn write_register<R>(&mut self, byte: u8) -> Result<(), E>
     where
-        R: Into<Register>,
+        R: RegisterClass,
     {
         self.cs.set_low()?;
-        self.spi.write(&mut [reg.into().waddr(), byte])?;
+        self.spi.write(&mut [R::REGISTER_CLASS.waddr(), byte])?;
         self.cs.set_high()?;
         Ok(())
     }
 
-    pub fn modify_register<R, F>(&mut self, reg: R, f: F) -> Result<(), E>
+    pub fn modify_register<R, F>(&mut self, f: F) -> Result<(), E>
     where
-        R: Into<Register> + Copy,
-        F: FnOnce(u8) -> u8,
+        R: RegisterClass + Copy,
+        F: FnOnce(R) -> u8,
     {
-        let r = self.read_register(reg)?;
-        self.write_register(reg, f(r))?;
+        let r = self.read_register::<R>()?;
+        self.write_register::<R>(f(r).into())?;
         Ok(())
     }
 }

@@ -108,14 +108,14 @@ impl Into<::lowlevel::registers::Register> for Config {
     }
 }
 
-register!(IOCFG2, 0b0010_1001, u8, {
+register!(Config, IOCFG2, 0b0010_1001, u8, {
     #[doc = "Invert output, i.e. select active low (1) / high (0)"]
     gdo2_inv @ 6,
     #[doc = "Default is CHP_RDYn (See Table 41 on page 62)"]
     gdo2_cfg @ 0..5,
 });
 
-register!(IOCFG1, 0b0010_1110, u8, {
+register!(Config, IOCFG1, 0b0010_1110, u8, {
     #[doc = "Set high (1) or low (0) output drive strength on the GDO pins"]
     gdo1_ds @ 7,
     #[doc = "Invert output, i.e. select active low (1) / high (0)"]
@@ -124,7 +124,7 @@ register!(IOCFG1, 0b0010_1110, u8, {
     gdo1_cfg @ 0..5,
 });
 
-register!(IOCFG0, 0b0011_1111, u8, {
+register!(Config, IOCFG0, 0b0011_1111, u8, {
     #[doc = "Enable analog temperature sensor. Write 0 in all other register bits when using temperature sensor."]
     temp_sensor_enable @ 7,
     #[doc = "Invert output, i.e. select active low (1) / high (0)"]
@@ -133,7 +133,7 @@ register!(IOCFG0, 0b0011_1111, u8, {
     gdo0_cfg @ 0..5,
 });
 
-register!(FIFOTHR, 0b0000_0111, u8, {
+register!(Config, FIFOTHR, 0b0000_0111, u8, {
     #[doc = "Analog to Digital Converter retention"]
     adc_retention @ 6,
     #[doc = "RX Attenuation, see DN010 for more details"]
@@ -142,22 +142,22 @@ register!(FIFOTHR, 0b0000_0111, u8, {
     fifo_thr @ 0..3,
 });
 
-register!(SYNC1, 0b1101_0011, u8, {
+register!(Config, SYNC1, 0b1101_0011, u8, {
     #[doc = "8 MSB of 16-bit sync word"]
     sync @ 0..7,
 });
 
-register!(SYNC0, 0b1001_0001, u8, {
+register!(Config, SYNC0, 0b1001_0001, u8, {
     #[doc = "8 LSB of 16-bit sync word"]
     sync @ 0..7,
 });
 
-register!(PKTLEN, 0b1111_1111, u8, {
+register!(Config, PKTLEN, 0b1111_1111, u8, {
     #[doc = "Packet length if mode is fixed, or max length if variable"]
     packet_length @ 0..7,
 });
 
-register!(PKTCTRL1, 0b0000_0100, u8, {
+register!(Config, PKTCTRL1, 0b0000_0100, u8, {
     #[doc = "Preamble quality estimator threshold."]
     pqt @ 5..7,
     #[doc = "Enable automatic flush of RX FIFO when CRC is not OK."]
@@ -168,7 +168,7 @@ register!(PKTCTRL1, 0b0000_0100, u8, {
     adr_chk @ 0..1,
 });
 
-register!(PKTCTRL0, 0b0100_0101, u8, {
+register!(Config, PKTCTRL0, 0b0100_0101, u8, {
     #[doc = "Turn data whitening on / off"]
     white_data @ 6,
     #[doc = "Format of RX and TX data"]
@@ -179,42 +179,42 @@ register!(PKTCTRL0, 0b0100_0101, u8, {
     length_config @ 0..1,
 });
 
-register!(ADDR, 0b0000_0000, u8, {
+register!(Config, ADDR, 0b0000_0000, u8, {
     #[doc = "Address used for packet filtration"]
     device_addr @ 0..7,
 });
 
-register!(CHANNR, 0b0000_0000, u8, {
+register!(Config, CHANNR, 0b0000_0000, u8, {
     #[doc = "Channel number, which is multiplied by the channel spacing setting and added to the base frequency."]
     chan @ 0..7,
 });
 
-register!(FSCTRL1, 0b0000_1111, u8, {
+register!(Config, FSCTRL1, 0b0000_1111, u8, {
     #[doc = "The desired IF frequency to employ in RX"]
     freq_if @ 0..4,
 });
 
-register!(FSCTRL0, 0b0000_0000, u8, {
+register!(Config, FSCTRL0, 0b0000_0000, u8, {
     #[doc = "Frequency offset added to the base frequency before being used by the frequency synthesizer. (2-comp)"]
     freqoff @ 0..7,
 });
 
-register!(FREQ2, 0b0001_1110, u8, {
+register!(Config, FREQ2, 0b0001_1110, u8, {
     #[doc = "FREQ\\[23:0\\] is the base frequency for the frequency synthesiser"]
     freq @ 0..5,
 });
 
-register!(FREQ1, 0b1100_0100, u8, {
+register!(Config, FREQ1, 0b1100_0100, u8, {
     #[doc = "FREQ\\[15:8\\], see FREQ2"]
     freq @ 0..7,
 });
 
-register!(FREQ0, 0b1110_1100, u8, {
+register!(Config, FREQ0, 0b1110_1100, u8, {
     #[doc = "FREQ\\[7:0\\], see FREQ2"]
     freq @ 0..7,
 });
 
-register!(MDMCFG4, 0b1000_1100, u8, {
+register!(Config, MDMCFG4, 0b1000_1100, u8, {
     #[doc = "Exponent of channel bandwidth"]
     chanbw_e @ 6..7,
     #[doc = "Mantissa of channel bandwidth"]
@@ -223,12 +223,12 @@ register!(MDMCFG4, 0b1000_1100, u8, {
     drate_e @ 0..3,
 });
 
-register!(MDMCFG3, 0b0010_0010, u8, {
+register!(Config, MDMCFG3, 0b0010_0010, u8, {
     #[doc = "Mantissa of symbol rate"]
     drate_m @ 0..7,
 });
 
-register!(MDMCFG2, 0b0000_0010, u8, {
+register!(Config, MDMCFG2, 0b0000_0010, u8, {
     #[doc = "Disable digital DC blocking filter before demodulator"]
     dem_dcfilt_off @ 7,
     #[doc = "The modulation format of the radio signal"]
@@ -239,7 +239,7 @@ register!(MDMCFG2, 0b0000_0010, u8, {
     sync_mode @ 0..2,
 });
 
-register!(MDMCFG1, 0b0010_0010, u8, {
+register!(Config, MDMCFG1, 0b0010_0010, u8, {
     #[doc = "Enable Forward Error Correction"]
     fec_en @ 7,
     #[doc = "Sets the minimum number of preamble bytes to be transmitted"]
@@ -248,19 +248,19 @@ register!(MDMCFG1, 0b0010_0010, u8, {
     chanspc_e @ 0..1,
 });
 
-register!(MDMCFG0, 0b1111_1000, u8, {
+register!(Config, MDMCFG0, 0b1111_1000, u8, {
     #[doc = "Mantissa of channel spacing"]
     chanspc_m @ 0..7,
 });
 
-register!(DEVIATN, 0b0100_0111, u8, {
+register!(Config, DEVIATN, 0b0100_0111, u8, {
     #[doc = "Exponent of deviation"]
     deviation_e @ 4..6,
     #[doc = "Mantissa of deviation"]
     deviation_m @ 0..2,
 });
 
-register!(MCSM2, 0b0000_0111, u8, {
+register!(Config, MCSM2, 0b0000_0111, u8, {
     #[doc = "Direct RX termination based on RSSI measurement"]
     rx_time_rssi @ 4,
     #[doc = "When RX_TIME expires, check sync_word (0), or either sync_word/PQI (1)"]
@@ -270,7 +270,7 @@ register!(MCSM2, 0b0000_0111, u8, {
 
 });
 
-register!(MCSM1, 0b0011_0000, u8, {
+register!(Config, MCSM1, 0b0011_0000, u8, {
     #[doc = "Selects CCA_MODE; Reflected in CCA signal"]
     cca_mode @ 4..5,
     #[doc = "Select what should happen when a packet has been received"]
@@ -279,7 +279,7 @@ register!(MCSM1, 0b0011_0000, u8, {
     txoff_mode @ 0..1,
 });
 
-register!(MCSM0, 0b0000_0100, u8, {
+register!(Config, MCSM0, 0b0000_0100, u8, {
     #[doc = "Automatically calibrate when going to RX or TX, or back to IDLE"]
     fs_autocal @ 4..5,
     #[doc = "Programs the number of times the six-bit ripple counter must expire after XOSC has stabilized before CHP_RDYn goes low"]
@@ -290,7 +290,7 @@ register!(MCSM0, 0b0000_0100, u8, {
     xosc_force_on @ 0,
 });
 
-register!(FOCCFG, 0b0011_0110, u8, {
+register!(Config, FOCCFG, 0b0011_0110, u8, {
     #[doc = "If set, the demodulator freezes the frequency offset compensation and clock recovery feedback loops until the CS signal goes high"]
     foc_bs_cs_gate @ 5,
     #[doc = "The frequency compensation loop gain to be used before a sync word is detected"]
@@ -301,7 +301,7 @@ register!(FOCCFG, 0b0011_0110, u8, {
     foc_limit @ 0..1,
 });
 
-register!(BSCFG, 0b0110_1100, u8, {
+register!(Config, BSCFG, 0b0110_1100, u8, {
     #[doc = "The clock recovery feedback loop integral gain to be used before a sync word is detected"]
     bs_pre_ki @ 6..7,
     #[doc = "The clock recovery feedback loop proportional gain to be used before a sync word is detected"]
@@ -314,7 +314,7 @@ register!(BSCFG, 0b0110_1100, u8, {
     bs_limit @ 0..1,
 });
 
-register!(AGCCTRL2, 0b0000_0011, u8, {
+register!(Config, AGCCTRL2, 0b0000_0011, u8, {
     #[doc = "Reduces the maximum allowable DVGA gain"]
     max_dvga_gain @ 6..7,
     #[doc = "Sets the maximum allowable LNA + LNA 2 gain relative to the maximum possible gain"]
@@ -323,7 +323,7 @@ register!(AGCCTRL2, 0b0000_0011, u8, {
     magn_target @ 0..2,
 });
 
-register!(AGCCTRL1, 0b0100_0000, u8, {
+register!(Config, AGCCTRL1, 0b0100_0000, u8, {
     #[doc = "Selects between two different strategies for LNA and LNA 2 gain adjustment"]
     agc_lna_priority @ 6,
     #[doc = "Sets the relative change threshold for asserting carrier sense"]
@@ -332,7 +332,7 @@ register!(AGCCTRL1, 0b0100_0000, u8, {
     carrier_sense_abs_thr @ 0..3,
 });
 
-register!(AGCCTRL0, 0b1001_0001, u8, {
+register!(Config, AGCCTRL0, 0b1001_0001, u8, {
     #[doc = "Sets the level of hysteresis on the magnitude deviation"]
     hyst_level @ 6..7,
     #[doc = "Sets the number of channel filter samples from a gain adjustment has been made until the AGC algorithm starts accumulating new samples"]
@@ -343,17 +343,17 @@ register!(AGCCTRL0, 0b1001_0001, u8, {
     filter_length @ 0..1,
 });
 
-register!(WOREVT1, 0b1000_0111, u8, {
+register!(Config, WOREVT1, 0b1000_0111, u8, {
     #[doc = "High byte of EVENT0 timeout register"]
     event @ 0..7,
 });
 
-register!(WOREVT0, 0b0110_1011, u8, {
+register!(Config, WOREVT0, 0b0110_1011, u8, {
     #[doc = "Low byte of EVENT0 timeout register"]
     event @ 0..7,
 });
 
-register!(WORCTRL, 0b1111_1000, u8, {
+register!(Config, WORCTRL, 0b1111_1000, u8, {
     #[doc = "Power down signal to RC oscillator"]
     rc_pd @ 7,
     #[doc = "Timeout setting from register block"]
@@ -364,7 +364,7 @@ register!(WORCTRL, 0b1111_1000, u8, {
     wor_res @ 0..1,
 });
 
-register!(FREND1, 0b0101_0110, u8, {
+register!(Config, FREND1, 0b0101_0110, u8, {
     #[doc = "Adjusts front-end LNA PTAT current output"]
     lna_current @ 6..7,
     #[doc = "Adjusts front-end PTAT outputs"]
@@ -375,14 +375,14 @@ register!(FREND1, 0b0101_0110, u8, {
     mix_current @ 0..1,
 });
 
-register!(FREND0, 0b0001_0000, u8, {
+register!(Config, FREND0, 0b0001_0000, u8, {
     #[doc = "Adjusts current TX LO buffer (input to PA)"]
     lodiv_buf_current_tx @ 4..5,
     #[doc = "Selects PA power setting"]
     pa_power @ 0..2,
 });
 
-register!(FSCAL3, 0b1010_1001, u8, {
+register!(Config, FSCAL3, 0b1010_1001, u8, {
     #[doc = "Frequency synthesizer calibration configuration"]
     fscal3 @ 6..7,
     #[doc = "Disable charge pump calibration stage when 0"]
@@ -391,60 +391,60 @@ register!(FSCAL3, 0b1010_1001, u8, {
     fscal3_result @ 0..3,
 });
 
-register!(FSCAL2, 0b0000_1010, u8, {
+register!(Config, FSCAL2, 0b0000_1010, u8, {
     #[doc = "Choose high (1) / low (0) VCO"]
     vco_core_h_en @ 5,
     #[doc = "Frequency synthesizer calibration result register, VCO current calibration result and override value"]
     fscal2 @ 0..4,
 });
 
-register!(FSCAL1, 0b0010_0000, u8, {
+register!(Config, FSCAL1, 0b0010_0000, u8, {
     #[doc = "Frequency synthesizer calibration result register, capacitor array setting for VCO coarse tuning"]
     fscal1 @ 0..5,
 });
 
-register!(FSCAL0, 0b0000_1101, u8, {
+register!(Config, FSCAL0, 0b0000_1101, u8, {
     #[doc = "Frequency synthesizer calibration control"]
     fscal0 @ 0..6,
 });
 
-register!(RCCTRL1, 0b0100_0001, u8, {
+register!(Config, RCCTRL1, 0b0100_0001, u8, {
     #[doc = "RC oscillator configuration"]
     rcctrl1 @ 0..6,
 });
 
-register!(RCCTRL0, 0b0000_0000, u8, {
+register!(Config, RCCTRL0, 0b0000_0000, u8, {
     #[doc = "RC oscillator configuration."]
     rcctrl0 @ 0..6,
 
 });
 
-register!(FSTEST, 0b0101_1001, u8, {
+register!(Config, FSTEST, 0b0101_1001, u8, {
     #[doc = "For test only. Do not write to this register."]
     fstest @ 0..7,
 });
 
-register!(PTEST, 0b0111_1111, u8, {
+register!(Config, PTEST, 0b0111_1111, u8, {
     #[doc = "Writing 0xBF to this register makes the on-chip temperature sensor available in the IDLE state"]
     ptest @ 0..7,
 });
 
-register!(AGCTEST, 0b0011_1111, u8, {
+register!(Config, AGCTEST, 0b0011_1111, u8, {
     #[doc = "For test only. Do not write to this register"]
     agctest @ 0..7,
 });
 
-register!(TEST2, 0b1000_1000, u8, {
+register!(Config, TEST2, 0b1000_1000, u8, {
     #[doc = "The value to use in this register is given by the SmartRF Studio software"]
     test2 @ 0..7,
 });
 
-register!(TEST1, 0b0011_0001, u8, {
+register!(Config, TEST1, 0b0011_0001, u8, {
     #[doc = "The value to use in this register is given by the SmartRF Studio software"]
     test1 @ 0..7,
 });
 
-register!(TEST0, 0b0000_1011, u8, {
+register!(Config, TEST0, 0b0000_1011, u8, {
     #[doc = "The value to use in this register is given by the SmartRF Studio software"]
     test0_1 @ 2..7,
     #[doc = "Enable VCO selection calibration stage when 1"]
