@@ -53,19 +53,20 @@ where
     }
 
     pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
-        let partnum = self.0.read_register::<PARTNUM>()?;
-        let version = self.0.read_register::<VERSION>()?;
+        let partnum: PARTNUM = self.0.read_register()?;
+        let version: VERSION = self.0.read_register()?;
         Ok((partnum.partnum(), version.version()))
     }
 
     /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
     pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<E>> {
-        Ok(rssi_to_dbm(self.0.read_register::<RSSI>()?.into()))
+        let rssi: RSSI = self.0.read_register()?;
+        Ok(rssi_to_dbm(rssi.into()))
     }
 
     /// The Link Quality Indicator metric of the current quality of the received signal.
     pub fn get_lqi(&mut self) -> Result<u8, Error<E>> {
-        let lqi = self.0.read_register::<LQI>()?;
+        let lqi: LQI = self.0.read_register()?;
         Ok(lqi.lqi())
     }
 
@@ -195,7 +196,7 @@ where
 
     fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
         loop {
-            let marcstate = self.0.read_register::<MARCSTATE>()?;
+            let marcstate: MARCSTATE = self.0.read_register()?;
             if target.value() == marcstate.marc_state() {
                 break;
             }
@@ -207,7 +208,7 @@ where
         let mut last = 0;
 
         loop {
-            let rxbytes = self.0.read_register::<RXBYTES>()?;
+            let rxbytes: RXBYTES = self.0.read_register()?;
             if rxbytes.rxfifo_overflow() == 1 {
                 return Err(Error::RxOverflow);
             }
@@ -230,7 +231,7 @@ where
             Ok(_nbytes) => {
                 let mut length = 0u8;
                 self.0.read_fifo(addr, &mut length, buf)?;
-                let lqi = self.0.read_register::<LQI>()?;
+                let lqi: LQI = self.0.read_register()?;
                 self.await_machine_state(MachineState::IDLE)?;
                 self.0.write_strobe(Command::SFRX)?;
                 if lqi.crc_ok() != 1 {
