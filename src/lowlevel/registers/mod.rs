@@ -33,6 +33,14 @@ impl Register {
     }
 }
 
-pub trait RegisterClass: From<u8> + Into<u8> {
+pub trait RegisterClass {
     const REGISTER_CLASS: Register;
+
+    fn bits(self) -> u8;
 }
+
+pub trait ReadableRegisterClass: From<u8> + Into<u8> + RegisterClass {
+    type Writable: RegisterClass;
+}
+
+pub trait WritableRegisterClass: RegisterClass {}

@@ -16,12 +16,32 @@ macro_rules! register {
         }
 
         #[allow(non_snake_case)]
-        pub fn $REGISTER(bits: $uxx) -> $REGISTER<::lowlevel::traits::R> {
+        pub fn $REGISTER(bits: $uxx) -> $REGISTER<::lowlevel::traits::R>
+        {
             $REGISTER { bits, _mode: ::core::marker::PhantomData }
         }
 
-        impl ::lowlevel::registers::RegisterClass for $REGISTER<::lowlevel::traits::R> {
+        impl<MODE> ::lowlevel::registers::RegisterClass for $REGISTER<MODE> {
             const REGISTER_CLASS: ::lowlevel::registers::Register = ::lowlevel::registers::Register::$PARENT($PARENT::$REGISTER);
+
+            fn bits(self) -> u8 {
+                self.bits
+            }
+        }
+
+        impl<MODE> ::lowlevel::registers::RegisterClass for &mut $REGISTER<MODE> {
+            const REGISTER_CLASS: ::lowlevel::registers::Register = ::lowlevel::registers::Register::$PARENT($PARENT::$REGISTER);
+
+            fn bits(self) -> u8 {
+                self.bits
+            }
+        }
+
+        impl ::lowlevel::registers::ReadableRegisterClass for $REGISTER<::lowlevel::traits::R> {
+            type Writable = $REGISTER<::lowlevel::traits::W>;
+        }
+
+        impl ::lowlevel::registers::WritableRegisterClass for $REGISTER<::lowlevel::traits::W> {
         }
 
         impl $REGISTER<::lowlevel::traits::R> {
@@ -84,6 +104,12 @@ macro_rules! register {
         impl From<u8> for $REGISTER<::lowlevel::traits::R> {
             fn from(val: u8) -> Self {
                 $REGISTER { bits: val, _mode: ::core::marker::PhantomData }
+            }
+        }
+
+        impl Into<$REGISTER<::lowlevel::traits::W>> for $REGISTER::<::lowlevel::traits::R> {
+            fn into(self) -> $REGISTER<::lowlevel::traits::W> {
+                self.modify()
             }
         }
     }

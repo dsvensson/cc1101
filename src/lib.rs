@@ -46,9 +46,9 @@ where
 
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
         let freq = hz * 1u64.rotate_left(16) / FXOSC;
-        self.0.write_register::<FREQ2>(((freq >> 16) & 0xff) as u8)?;
-        self.0.write_register::<FREQ1>(((freq >> 8) & 0xff) as u8)?;
-        self.0.write_register::<FREQ0>((freq & 0xff) as u8)?;
+        self.0.write_register(FREQ2(((freq >> 16) & 0xff) as u8))?;
+        self.0.write_register(FREQ1(((freq >> 8) & 0xff) as u8))?;
+        self.0.write_register(FREQ0((freq & 0xff) as u8))?;
         Ok(())
     }
 
@@ -80,9 +80,9 @@ where
             SyncMode::MatchPartialRepeated(word) => (SyncCheck::CHECK_30_32, word),
             SyncMode::MatchFull(word) => (SyncCheck::CHECK_16_16, word),
         };
-        self.0.modify_register(|r: MDMCFG2| r.modify().sync_mode(mode.value()).bits())?;
-        self.0.write_register::<SYNC1>(((word >> 8) & 0xff) as u8)?;
-        self.0.write_register::<SYNC0>((word & 0xff) as u8)?;
+        self.0.modify_register(|r: MDMCFG2| *r.modify().sync_mode(mode.value()))?;
+        self.0.write_register(SYNC1(((word >> 8) & 0xff) as u8))?;
+        self.0.write_register(SYNC0((word & 0xff) as u8))?;
         Ok(())
     }
 
@@ -97,7 +97,7 @@ where
             Modulation::FourFrequencyShiftKeying => MF::MOD_4FSK,
             Modulation::MinimumShiftKeying => MF::MOD_MSK,
         };
-        self.0.modify_register(|r: MDMCFG2| r.modify().mod_format(value.value()).bits())?;
+        self.0.modify_register(|r: MDMCFG2| *r.modify().mod_format(value.value()))?;
         Ok(())
     }
 
@@ -111,8 +111,8 @@ where
             AddressFilter::DeviceLowBroadcast(addr) => (AC::SELF_LOW_BROADCAST, addr),
             AddressFilter::DeviceHighLowBroadcast(addr) => (AC::SELF_HIGH_LOW_BROADCAST, addr),
         };
-        self.0.modify_register(|r: PKTCTRL1| r.modify().adr_chk(mode.value()).bits())?;
-        self.0.write_register::<ADDR>(addr)?;
+        self.0.modify_register(|r: PKTCTRL1| *r.modify().adr_chk(mode.value()))?;
+        self.0.write_register(ADDR(addr))?;
         Ok(())
     }
 
@@ -125,8 +125,8 @@ where
             PacketLength::Variable(max_limit) => (LC::VARIABLE, max_limit),
             PacketLength::Infinite => (LC::INFINITE, PKTLEN::default().bits()),
         };
-        self.0.modify_register(|r: PKTCTRL0| r.modify().length_config(format.value()).bits())?;
-        self.0.write_register::<PKTLEN>(pktlen)?;
+        self.0.modify_register(|r: PKTCTRL0| *r.modify().length_config(format.value()))?;
+        self.0.write_register(PKTLEN(pktlen))?;
         Ok(())
     }
 
@@ -156,39 +156,39 @@ where
     pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
         self.0.write_strobe(Command::SRES)?;
 
-        self.0.write_register::<PKTCTRL0>(PKTCTRL0::default()
-            .white_data(0).bits()
+        self.0.write_register(PKTCTRL0::default()
+            .white_data(0)
         )?;
 
-        self.0.write_register::<FSCTRL1>(FSCTRL1::default()
-            .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
+        self.0.write_register(FSCTRL1::default()
+            .freq_if(0x08) // f_if = (f_osc / 2^10) * FREQ_IF
         )?;
 
-        self.0.write_register::<MDMCFG4>(MDMCFG4::default()
+        self.0.write_register(MDMCFG4::default()
             .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
             .chanbw_m(0x00)
-            .drate_e(0x0A).bits()
+            .drate_e(0x0A)
         )?;
 
-        self.0.write_register::<MDMCFG3>(MDMCFG3::default()
-            .drate_m(0x83).bits() // r_data = (((256 + drate_m) * 2^drate_e) / 2**38) * f_osc
+        self.0.write_register(MDMCFG3::default()
+            .drate_m(0x83) // r_data = (((256 + drate_m) * 2^drate_e) / 2**38) * f_osc
         )?;
 
-        self.0.write_register::<MDMCFG2>(MDMCFG2::default()
-            .dem_dcfilt_off(1).bits()
+        self.0.write_register(MDMCFG2::default()
+            .dem_dcfilt_off(1)
         )?;
 
-        self.0.write_register::<DEVIATN>(DEVIATN::default()
+        self.0.write_register(DEVIATN::default()
             .deviation_e(0x03)
-            .deviation_m(0x05).bits()
+            .deviation_m(0x05)
         )?;
 
-        self.0.write_register::<MCSM0>(MCSM0::default()
-            .fs_autocal(AutoCalibration::FROM_IDLE.value()).bits()
+        self.0.write_register(MCSM0::default()
+            .fs_autocal(AutoCalibration::FROM_IDLE.value())
         )?;
 
-        self.0.write_register::<AGCCTRL2>(AGCCTRL2::default()
-            .max_lna_gain(0x04).bits()
+        self.0.write_register(AGCCTRL2::default()
+            .max_lna_gain(0x04)
         )?;
 
         Ok(())

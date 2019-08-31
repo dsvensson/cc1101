@@ -34,7 +34,7 @@ where
 
     pub fn read_register<R>(&mut self) -> Result<R, E>
     where
-        R: RegisterClass,
+        R: ReadableRegisterClass,
     {
         self.cs.set_low()?;
         let mut buffer = [R::REGISTER_CLASS.raddr(), 0u8];
@@ -64,23 +64,23 @@ where
         Ok(())
     }
 
-    pub fn write_register<R>(&mut self, byte: u8) -> Result<(), E>
+    pub fn write_register<R>(&mut self, byte: R) -> Result<(), E>
     where
         R: RegisterClass,
     {
         self.cs.set_low()?;
-        self.spi.write(&mut [R::REGISTER_CLASS.waddr(), byte])?;
+        self.spi.write(&mut [R::REGISTER_CLASS.waddr(), byte.bits()])?;
         self.cs.set_high()?;
         Ok(())
     }
 
     pub fn modify_register<R, F>(&mut self, f: F) -> Result<(), E>
     where
-        R: RegisterClass + Copy,
-        F: FnOnce(R) -> u8,
+        R: ReadableRegisterClass + Copy,
+        F: FnOnce(R) -> R::Writable,
     {
         let r = self.read_register::<R>()?;
-        self.write_register::<R>(f(r).into())?;
+        self.write_register(f(r))?;
         Ok(())
     }
 }
