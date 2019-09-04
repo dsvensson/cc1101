@@ -35,6 +35,12 @@ impl<E> From<E> for Error<E> {
 /// High level API for interacting with the CC1101 radio chip.
 pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
 
+const fn deviation_to_components(v: u64) -> (u8, u8) {
+    let exponent = 8 - ((v.rotate_left(14) / FXOSC) as u8).leading_zeros() - 1;
+    let mantissa = (v.rotate_left(17) / (FXOSC.rotate_left(exponent))) - 7;
+    ((mantissa & 0x7) as u8, (exponent & 0x7) as u8)
+}
+
 impl<SPI, CS, E> Cc1101<SPI, CS>
 where
     SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
@@ -49,6 +55,14 @@ where
         self.0.write_register(FREQ2(((freq >> 16) & 0xff) as u8))?;
         self.0.write_register(FREQ1(((freq >> 8) & 0xff) as u8))?;
         self.0.write_register(FREQ0((freq & 0xff) as u8))?;
+        Ok(())
+    }
+
+    pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<E>> {
+        let (exponent, mantissa) = deviation_to_components(deviation);
+        self.0.write_register(DEVIATN::default()
+            .deviation_m(mantissa)
+            .deviation_e(exponent))?;
         Ok(())
     }
 
@@ -301,4 +315,66 @@ pub enum SyncMode {
     MatchPartialRepeated(u16),
     /// Match 16 of 16 bits of given sync word.
     MatchFull(u16),
+}
+
+#[cfg(test)]
+mod tests {
+    use ::{FXOSC, Cc1101};
+    use lowlevel::registers::*;
+    use deviation_to_components;
+
+    fn calc_freq(hz: u64) -> (u8, u8, u8) {
+        let freq = hz * 1u64.rotate_left(16) / FXOSC;
+        ((((freq >> 16) & 0xff) as u8),
+         (((freq >> 8) & 0xff) as u8),
+        (((freq & 0xff) as u8)))
+    }
+
+    #[test]
+    fn test_frequency() {
+        assert_eq!(calc_freq(433_000_000), (0x10, 0xA7, 0x62));
+        assert_eq!(calc_freq(868_000_000), (0x21, 0x62, 0x76));
+        assert_eq!(calc_freq(902_000_000), (0x22, 0xB1, 0x3B));
+        assert_eq!(calc_freq(918_000_000), (0x23, 0x4E, 0xC4));
+    }
+
+    #[test]
+    fn test_drate() {
+        // DRATE = 1000000.0 * MHZ * (256+drate_m) * powf(2,drate_e) / powf(2,28);
+        // 0xF8 - MDMCFG4       Modem Configuration - BW: 58.035Khz (0xF6 would give 2.4kBaud
+        // 0x83 - MDMCFG3       Modem Configuration - 9595 Baud
+
+        assert_eq!((8,131), (MDMCFG4(0xF8).drate_e(), MDMCFG3(0x83).drate_m()));
+
+        assert_eq!((9595u64.rotate_left(28) / FXOSC.rotate_left(8)) - 256, 131);
+        assert_eq!(8 - ((9595u64.rotate_left(20) / FXOSC) as u8).leading_zeros() - 1, 8)
+
+        //radio_parms->drate_e = (uint8_t) (floor(log2( drate*(1<<20) / f_xtal )));
+        //radio_parms->drate_m = (uint8_t) ( ((drate*(1<<28)) / (f_xtal * (1<<radio_parms->drate_e))) - 256);
+
+
+    }
+
+    #[test]
+    fn test_deviation() {
+        fn calc_rev_dev(dev_m: u8, dev_e: u8) -> u64 {
+            (((FXOSC as f32 / (2u64.pow(17) as f32)) as f32) * (8f32 + dev_m as f32) * (2u64.pow(dev_e as u32) as f32)) as u64
+        }
+
+        for e in 0..7 {
+            for m in 1..7 {
+                assert_eq!(deviation_to_components(calc_rev_dev(m, e)), (m, e));
+            }
+        }
+    }
+
+    /*
+    fn calc_chanspc(chanspc: u64) -> (u8, u8) {
+
+    }
+
+    #[test]
+    fn test_foo() {
+        assert_eq!((0,0), MDMCFG1(0x22).chanspc_e(), MDMCFG0(0xF8).chanspc_m())
+    }*/
 }
