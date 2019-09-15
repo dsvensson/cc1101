@@ -7,10 +7,13 @@ mod macros;
 mod access;
 mod traits;
 
+pub mod convert;
 pub mod registers;
 pub mod types;
 
 use self::registers::*;
+
+pub const FXOSC: u64 = 26_000_000;
 
 pub struct Cc1101<SPI, CS> {
     pub(crate) spi: SPI,

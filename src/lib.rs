@@ -5,12 +5,11 @@ extern crate embedded_hal as hal;
 use hal::blocking::spi::{Transfer, Write};
 use hal::digital::v2::OutputPin;
 
-const FXOSC: u64 = 26_000_000;
-
 #[macro_use]
 pub mod lowlevel;
 mod rssi;
 
+use crate::lowlevel::convert::from_frequency;
 use lowlevel::registers::*;
 use lowlevel::types::*;
 use rssi::rssi_to_dbm;
@@ -45,10 +44,10 @@ where
     }
 
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
-        let freq = hz * 1u64.rotate_left(16) / FXOSC;
-        self.0.write_register(Config::FREQ2, ((freq >> 16) & 0xff) as u8)?;
-        self.0.write_register(Config::FREQ1, ((freq >> 8) & 0xff) as u8)?;
-        self.0.write_register(Config::FREQ0, (freq & 0xff) as u8)?;
+        let (freq0, freq1, freq2) = from_frequency(hz);
+        self.0.write_register(Config::FREQ0, freq0)?;
+        self.0.write_register(Config::FREQ1, freq1)?;
+        self.0.write_register(Config::FREQ2, freq2)?;
         Ok(())
     }
 
