@@ -9,7 +9,7 @@ use hal::digital::v2::OutputPin;
 pub mod lowlevel;
 mod rssi;
 
-use crate::lowlevel::convert::from_frequency;
+use lowlevel::convert::*;
 use lowlevel::registers::*;
 use lowlevel::types::*;
 use rssi::rssi_to_dbm;
@@ -48,6 +48,15 @@ where
         self.0.write_register(Config::FREQ0, freq0)?;
         self.0.write_register(Config::FREQ1, freq1)?;
         self.0.write_register(Config::FREQ2, freq2)?;
+        Ok(())
+    }
+
+    pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<E>> {
+        let (mantissa, exponent) = from_deviation(deviation);
+        self.0.write_register(
+            Config::DEVIATN,
+            DEVIATN::default().deviation_m(mantissa).deviation_e(exponent).bits(),
+        )?;
         Ok(())
     }
 
@@ -182,11 +191,6 @@ where
 
         self.0.write_register(Config::MDMCFG2, MDMCFG2::default()
             .dem_dcfilt_off(1).bits()
-        )?;
-
-        self.0.write_register(Config::DEVIATN, DEVIATN::default()
-            .deviation_e(0x03)
-            .deviation_m(0x05).bits()
         )?;
 
         self.0.write_register(Config::MCSM0, MCSM0::default()
