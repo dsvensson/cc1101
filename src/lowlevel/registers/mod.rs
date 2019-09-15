@@ -6,7 +6,7 @@ pub use self::command::*;
 pub use self::config::*;
 pub use self::status::*;
 
-use lowlevel::access;
+use crate::lowlevel::access;
 
 #[derive(Clone, Copy)]
 pub enum Register {

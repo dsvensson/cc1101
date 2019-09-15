@@ -102,9 +102,9 @@ impl Config {
     }
 }
 
-impl Into<::lowlevel::registers::Register> for Config {
-    fn into(self) -> ::lowlevel::registers::Register {
-        ::lowlevel::registers::Register::Config(self)
+impl Into<crate::lowlevel::registers::Register> for Config {
+    fn into(self) -> crate::lowlevel::registers::Register {
+        crate::lowlevel::registers::Register::Config(self)
     }
 }
 

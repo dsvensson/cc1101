@@ -37,9 +37,9 @@ impl Status {
     }
 }
 
-impl Into<::lowlevel::registers::Register> for Status {
-    fn into(self) -> ::lowlevel::registers::Register {
-        ::lowlevel::registers::Register::Status(self)
+impl Into<crate::lowlevel::registers::Register> for Status {
+    fn into(self) -> crate::lowlevel::registers::Register {
+        crate::lowlevel::registers::Register::Status(self)
     }
 }
 

@@ -9,14 +9,14 @@ macro_rules! register {
             _mode: ::core::marker::PhantomData<MODE>,
         }
 
-        impl $REGISTER<::lowlevel::traits::Mask> {
-            pub fn mask() -> $REGISTER<::lowlevel::traits::Mask> {
+        impl $REGISTER<crate::lowlevel::traits::Mask> {
+            pub fn mask() -> $REGISTER<crate::lowlevel::traits::Mask> {
                 $REGISTER { bits: 0, _mode: ::core::marker::PhantomData }
             }
 
             $(
                 pub fn $bitfield(&self) -> $uxx {
-                    use lowlevel::traits::OffsetSize;
+                    use crate::lowlevel::traits::OffsetSize;
 
                     let size = $range.size() + 1;
                     let offset = $range.offset();
@@ -25,26 +25,26 @@ macro_rules! register {
             )+
         }
 
-        impl ::core::default::Default for $REGISTER<::lowlevel::traits::W> {
+        impl ::core::default::Default for $REGISTER<crate::lowlevel::traits::W> {
             fn default() -> Self {
                 $REGISTER { bits: $reset_value, _mode: ::core::marker::PhantomData }
             }
         }
 
         #[allow(non_snake_case)]
-        pub fn $REGISTER(bits: $uxx) -> $REGISTER<::lowlevel::traits::R> {
+        pub fn $REGISTER(bits: $uxx) -> $REGISTER<crate::lowlevel::traits::R> {
             $REGISTER { bits, _mode: ::core::marker::PhantomData }
         }
 
-        impl $REGISTER<::lowlevel::traits::R> {
-            pub fn modify(self) -> $REGISTER<::lowlevel::traits::W> {
+        impl $REGISTER<crate::lowlevel::traits::R> {
+            pub fn modify(self) -> $REGISTER<crate::lowlevel::traits::W> {
                 $REGISTER { bits: self.bits, _mode: ::core::marker::PhantomData }
             }
 
             $(
                 #[$($attr)*]
                 pub fn $bitfield(&self) -> $uxx {
-                    use lowlevel::traits::OffsetSize;
+                    use crate::lowlevel::traits::OffsetSize;
 
                     let offset = $range.offset();
                     let size = $range.size() + 1;
@@ -55,7 +55,7 @@ macro_rules! register {
             )+
         }
 
-        impl $REGISTER<::lowlevel::traits::W> {
+        impl $REGISTER<crate::lowlevel::traits::W> {
             pub fn bits(self) -> $uxx {
                 self.bits
             }
@@ -63,7 +63,7 @@ macro_rules! register {
             $(
                 #[$($attr)*]
                 pub fn $bitfield(&mut self, mut bits: $uxx) -> &mut Self {
-                    use lowlevel::traits::OffsetSize;
+                    use crate::lowlevel::traits::OffsetSize;
 
                     let offset = $range.offset();
                     let size = $range.size() + 1;
