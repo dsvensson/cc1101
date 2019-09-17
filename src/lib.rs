@@ -60,6 +60,14 @@ where
         Ok(())
     }
 
+    pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<E>> {
+        let (mantissa, exponent) = from_drate(baud);
+        self.0
+            .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
+        self.0.write_register(Config::MDMCFG3, MDMCFG3::default().drate_m(mantissa).bits())?;
+        Ok(())
+    }
+
     pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
         let partnum = self.0.read_register(Status::PARTNUM)?;
         let version = self.0.read_register(Status::VERSION)?;
@@ -181,12 +189,7 @@ where
 
         self.0.write_register(Config::MDMCFG4, MDMCFG4::default()
             .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
-            .chanbw_m(0x00)
-            .drate_e(0x0A).bits()
-        )?;
-
-        self.0.write_register(Config::MDMCFG3, MDMCFG3::default()
-            .drate_m(0x83).bits() // r_data = (((256 + drate_m) * 2^drate_e) / 2**38) * f_osc
+            .chanbw_m(0x00).bits()
         )?;
 
         self.0.write_register(Config::MDMCFG2, MDMCFG2::default()

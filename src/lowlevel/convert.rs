@@ -14,6 +14,14 @@ pub const fn from_deviation(v: u64) -> (u8, u8) {
     ((mantissa & 0x7) as u8, (exponent & 0x7) as u8)
 }
 
+// TODO: Not defined for all values, need to figure out.
+pub const fn from_drate(v: u64) -> (u8, u8) {
+    let exponent = 64 - (v.rotate_left(19) / FXOSC).leading_zeros();
+    let mantissa = ((v.rotate_left(27)) / (FXOSC.rotate_left(exponent - 1))) - 255;
+    // When mantissa is 256, wrap to zero and increase exponent by one
+    [(mantissa as u8, exponent as u8), (0u8, (exponent + 1) as u8)][(mantissa == 256) as usize]
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lowlevel::convert::*;
@@ -41,5 +49,38 @@ mod tests {
                 assert_eq!(from_deviation(calc_rev_dev(m, e)), (m, e));
             }
         }
+    }
+
+    #[test]
+    fn test_drate() {
+        // Some sample settings from SmartRF Studio
+        assert_eq!((117, 5), from_drate(1156));
+        assert_eq!((117, 7), from_drate(4624));
+        assert_eq!((117, 10), from_drate(36994));
+        assert_eq!((34, 12), from_drate(115051));
+        assert_eq!((59, 14), from_drate(499877));
+        assert_eq!((59, 13), from_drate(249938));
+        assert_eq!((248, 11), from_drate(99975));
+        assert_eq!((131, 11), from_drate(76766));
+        assert_eq!((131, 10), from_drate(38383));
+        assert_eq!((147, 8), from_drate(9992));
+        assert_eq!((131, 7), from_drate(4797));
+        assert_eq!((131, 6), from_drate(2398));
+        assert_eq!((131, 5), from_drate(1199));
+
+        /* TODO: make this work
+        fn calc_drate_rev(mantissa: u8, exponent: u8) -> u64 {
+            let q = (256.0 + mantissa as f64) * 2f64.powf(exponent as f64);
+            let p = 2f64.powf(28.0);
+            ((q / p) * FXOSC as f64).floor() as u64
+        }
+        for e in 0..255 {
+            for m in 0..255 {
+                let baud = calc_drate_rev(m, e);
+                let (mp, ep) = from_drate(baud);
+                assert_eq!((mp, ep), (m as u64, e as u64));
+            }
+        }
+        */
     }
 }
