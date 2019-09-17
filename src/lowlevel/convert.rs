@@ -9,7 +9,7 @@ pub const fn from_frequency(hz: u64) -> (u8, u8, u8) {
 }
 
 pub const fn from_deviation(v: u64) -> (u8, u8) {
-    let exponent = 8 - ((v.rotate_left(14) / FXOSC) as u8).leading_zeros() - 1;
+    let exponent = 64 - (v.rotate_left(14) / FXOSC).leading_zeros() - 1;
     let mantissa = (v.rotate_left(17) / (FXOSC.rotate_left(exponent))) - 7;
     ((mantissa & 0x7) as u8, (exponent & 0x7) as u8)
 }
