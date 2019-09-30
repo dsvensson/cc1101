@@ -68,6 +68,14 @@ where
         Ok(())
     }
 
+    pub fn set_chanbw(&mut self, bandwidth: u64) -> Result<(), Error<E>> {
+        let (mantissa, exponent) = from_chanbw(bandwidth);
+        self.0.modify_register(Config::MDMCFG4, |r| {
+            MDMCFG4(r).modify().chanbw_m(mantissa).chanbw_e(exponent).bits()
+        })?;
+        Ok(())
+    }
+
     pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
         let partnum = self.0.read_register(Status::PARTNUM)?;
         let version = self.0.read_register(Status::VERSION)?;
@@ -185,11 +193,6 @@ where
 
         self.0.write_register(Config::FSCTRL1, FSCTRL1::default()
             .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
-        )?;
-
-        self.0.write_register(Config::MDMCFG4, MDMCFG4::default()
-            .chanbw_e(0x03) // bw_chan = f_osc / (8 * (4 + chanbw_m) * 2^chanbw_e
-            .chanbw_m(0x00).bits()
         )?;
 
         self.0.write_register(Config::MDMCFG2, MDMCFG2::default()

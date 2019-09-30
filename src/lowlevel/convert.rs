@@ -22,6 +22,12 @@ pub const fn from_drate(v: u64) -> (u8, u8) {
     [(mantissa as u8, exponent as u8), (0u8, (exponent + 1) as u8)][(mantissa == 256) as usize]
 }
 
+pub fn from_chanbw(v: u64) -> (u8, u8) {
+    let exponent = 64 - (FXOSC / (8 * 4 * v)).leading_zeros() - 1;
+    let mantissa = FXOSC / (v * 8 * 2u64.pow(exponent)) - 4;
+    (mantissa as u8 & 0x3, exponent as u8 & 0x3)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lowlevel::convert::*;
@@ -82,5 +88,25 @@ mod tests {
             }
         }
         */
+    }
+
+    #[test]
+    fn test_chanbw() {
+        assert_eq!(from_chanbw(812500), (0b00, 0b00));
+        assert_eq!(from_chanbw(650000), (0b01, 0b00));
+        assert_eq!(from_chanbw(541666), (0b10, 0b00));
+        assert_eq!(from_chanbw(464285), (0b11, 0b00));
+        assert_eq!(from_chanbw(406250), (0b00, 0b01));
+        assert_eq!(from_chanbw(325000), (0b01, 0b01));
+        assert_eq!(from_chanbw(270833), (0b10, 0b01));
+        assert_eq!(from_chanbw(232142), (0b11, 0b01));
+        assert_eq!(from_chanbw(203125), (0b00, 0b10));
+        assert_eq!(from_chanbw(162000), (0b01, 0b10));
+        assert_eq!(from_chanbw(135416), (0b10, 0b10));
+        assert_eq!(from_chanbw(116071), (0b11, 0b10));
+        assert_eq!(from_chanbw(101562), (0b00, 0b11));
+        assert_eq!(from_chanbw(81250), (0b01, 0b11));
+        assert_eq!(from_chanbw(67708), (0b10, 0b11));
+        assert_eq!(from_chanbw(58035), (0b11, 0b11));
     }
 }
