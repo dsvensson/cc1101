@@ -22,12 +22,18 @@ pub struct Cc1101<SPI, CS> {
     //    gdo2: GDO2,
 }
 
-impl<SPI, CS, E> Cc1101<SPI, CS>
+#[derive(Debug)]
+pub enum Error<SpiE, GpioE> {
+    Spi(SpiE),
+    Gpio(GpioE),
+}
+
+impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>
 where
-    SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
-    CS: OutputPin<Error = E>,
+    SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    CS: OutputPin<Error = GpioE>,
 {
-    pub fn new(spi: SPI, cs: CS) -> Result<Self, E> {
+    pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<SpiE, GpioE>> {
         let cc1101 = Cc1101 {
             spi: spi,
             cs: cs,
@@ -35,24 +41,29 @@ where
         Ok(cc1101)
     }
 
-    pub fn read_register<R>(&mut self, reg: R) -> Result<u8, E>
+    pub fn read_register<R>(&mut self, reg: R) -> Result<u8, Error<SpiE, GpioE>>
     where
         R: Into<Register>,
     {
-        self.cs.set_low()?;
+        self.cs.set_low().map_err(Error::Gpio)?;
         let mut buffer = [reg.into().raddr(), 0u8];
-        self.spi.transfer(&mut buffer)?;
-        self.cs.set_high()?;
+        self.spi.transfer(&mut buffer).map_err(Error::Spi)?;
+        self.cs.set_high().map_err(Error::Gpio)?;
         Ok(buffer[1])
     }
 
-    pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), E> {
+    pub fn read_fifo(
+        &mut self,
+        addr: &mut u8,
+        len: &mut u8,
+        buf: &mut [u8],
+    ) -> Result<(), Error<SpiE, GpioE>> {
         let mut buffer = [Command::FIFO.addr() | 0xC0, 0, 0];
 
-        self.cs.set_low()?;
-        self.spi.transfer(&mut buffer)?;
-        self.spi.transfer(buf)?;
-        self.cs.set_high()?;
+        self.cs.set_low().map_err(Error::Gpio)?;
+        self.spi.transfer(&mut buffer).map_err(Error::Spi)?;
+        self.spi.transfer(buf).map_err(Error::Spi)?;
+        self.cs.set_high().map_err(Error::Gpio)?;
 
         *len = buffer[1];
         *addr = buffer[2];
@@ -60,24 +71,24 @@ where
         Ok(())
     }
 
-    pub fn write_strobe(&mut self, com: Command) -> Result<(), E> {
-        self.cs.set_low()?;
-        self.spi.write(&[com.addr()])?;
-        self.cs.set_high()?;
+    pub fn write_strobe(&mut self, com: Command) -> Result<(), Error<SpiE, GpioE>> {
+        self.cs.set_low().map_err(Error::Gpio)?;
+        self.spi.write(&[com.addr()]).map_err(Error::Spi)?;
+        self.cs.set_high().map_err(Error::Gpio)?;
         Ok(())
     }
 
-    pub fn write_register<R>(&mut self, reg: R, byte: u8) -> Result<(), E>
+    pub fn write_register<R>(&mut self, reg: R, byte: u8) -> Result<(), Error<SpiE, GpioE>>
     where
         R: Into<Register>,
     {
-        self.cs.set_low()?;
-        self.spi.write(&mut [reg.into().waddr(), byte])?;
-        self.cs.set_high()?;
+        self.cs.set_low().map_err(Error::Gpio)?;
+        self.spi.write(&mut [reg.into().waddr(), byte]).map_err(Error::Spi)?;
+        self.cs.set_high().map_err(Error::Gpio)?;
         Ok(())
     }
 
-    pub fn modify_register<R, F>(&mut self, reg: R, f: F) -> Result<(), E>
+    pub fn modify_register<R, F>(&mut self, reg: R, f: F) -> Result<(), Error<SpiE, GpioE>>
     where
         R: Into<Register> + Copy,
         F: FnOnce(u8) -> u8,

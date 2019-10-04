@@ -16,34 +16,39 @@ use rssi::rssi_to_dbm;
 
 /// CC1101 errors.
 #[derive(Debug)]
-pub enum Error<E> {
+pub enum Error<SpiE, GpioE> {
     /// The RX FIFO buffer overflowed, too small buffer for configured packet length.
     RxOverflow,
     /// Corrupt packet received with invalid CRC.
     CrcMismatch,
     /// Platform-dependent SPI-errors, such as IO errors.
-    Spi(E),
+    Spi(SpiE),
+    /// Platform-dependent GPIO-errors, such as IO errors.
+    Gpio(GpioE),
 }
 
-impl<E> From<E> for Error<E> {
-    fn from(e: E) -> Self {
-        Error::Spi(e)
+impl<SpiE, GpioE> From<lowlevel::Error<SpiE, GpioE>> for Error<SpiE, GpioE> {
+    fn from(e: lowlevel::Error<SpiE, GpioE>) -> Self {
+        match e {
+            lowlevel::Error::Spi(inner) => Error::Spi(inner),
+            lowlevel::Error::Gpio(inner) => Error::Gpio(inner),
+        }
     }
 }
 
 /// High level API for interacting with the CC1101 radio chip.
 pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
 
-impl<SPI, CS, E> Cc1101<SPI, CS>
+impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>
 where
-    SPI: Transfer<u8, Error = E> + Write<u8, Error = E>,
-    CS: OutputPin<Error = E>,
+    SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    CS: OutputPin<Error = GpioE>,
 {
-    pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<E>> {
+    pub fn new(spi: SPI, cs: CS) -> Result<Self, Error<SpiE, GpioE>> {
         Ok(Cc1101(lowlevel::Cc1101::new(spi, cs)?))
     }
 
-    pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<E>> {
+    pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (freq0, freq1, freq2) = from_frequency(hz);
         self.0.write_register(Config::FREQ0, freq0)?;
         self.0.write_register(Config::FREQ1, freq1)?;
@@ -51,7 +56,7 @@ where
         Ok(())
     }
 
-    pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<E>> {
+    pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
             Config::DEVIATN,
@@ -60,7 +65,7 @@ where
         Ok(())
     }
 
-    pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<E>> {
+    pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_drate(baud);
         self.0
             .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
@@ -68,7 +73,7 @@ where
         Ok(())
     }
 
-    pub fn set_chanbw(&mut self, bandwidth: u64) -> Result<(), Error<E>> {
+    pub fn set_chanbw(&mut self, bandwidth: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_chanbw(bandwidth);
         self.0.modify_register(Config::MDMCFG4, |r| {
             MDMCFG4(r).modify().chanbw_m(mantissa).chanbw_e(exponent).bits()
@@ -76,25 +81,25 @@ where
         Ok(())
     }
 
-    pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<E>> {
+    pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<SpiE, GpioE>> {
         let partnum = self.0.read_register(Status::PARTNUM)?;
         let version = self.0.read_register(Status::VERSION)?;
         Ok((partnum, version))
     }
 
     /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
-    pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<E>> {
+    pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<SpiE, GpioE>> {
         Ok(rssi_to_dbm(self.0.read_register(Status::RSSI)?))
     }
 
     /// The Link Quality Indicator metric of the current quality of the received signal.
-    pub fn get_lqi(&mut self) -> Result<u8, Error<E>> {
+    pub fn get_lqi(&mut self) -> Result<u8, Error<SpiE, GpioE>> {
         let lqi = self.0.read_register(Status::LQI)?;
         Ok(lqi & !(1u8 << 7))
     }
 
     /// Configure the sync word to use, and at what level it should be verified.
-    pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<E>> {
+    pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<SpiE, GpioE>> {
         let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
 
         let (mode, word) = match sync_mode {
@@ -112,7 +117,7 @@ where
     }
 
     /// Configure signal modulation.
-    pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<E>> {
+    pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<SpiE, GpioE>> {
         use lowlevel::types::ModFormat as MF;
 
         let value = match format {
@@ -129,7 +134,7 @@ where
     }
 
     /// Configure device address, and address filtering.
-    pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<E>> {
+    pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<SpiE, GpioE>> {
         use lowlevel::types::AddressCheck as AC;
 
         let (mode, addr) = match filter {
@@ -146,7 +151,7 @@ where
     }
 
     /// Configure packet mode, and length.
-    pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<E>> {
+    pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<SpiE, GpioE>> {
         use lowlevel::types::LengthConfig as LC;
 
         let (format, pktlen) = match length {
@@ -162,7 +167,7 @@ where
     }
 
     /// Set radio in Receive/Transmit/Idle mode.
-    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<E>> {
+    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE, GpioE>> {
         let target = match radio_mode {
             RadioMode::Receive => {
                 self.set_radio_mode(RadioMode::Idle)?;
@@ -184,7 +189,7 @@ where
 
     /// Configure some default settings, to be removed in the future.
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn set_defaults(&mut self) -> Result<(), Error<E>> {
+    pub fn set_defaults(&mut self) -> Result<(), Error<SpiE, GpioE>> {
         self.0.write_strobe(Command::SRES)?;
 
         self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
@@ -210,7 +215,7 @@ where
         Ok(())
     }
 
-    fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<E>> {
+    fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<SpiE, GpioE>> {
         loop {
             let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
             if target.value() == marcstate.marc_state() {
@@ -220,7 +225,7 @@ where
         Ok(())
     }
 
-    fn rx_bytes_available(&mut self) -> Result<u8, Error<E>> {
+    fn rx_bytes_available(&mut self) -> Result<u8, Error<SpiE, GpioE>> {
         let mut last = 0;
 
         loop {
@@ -242,7 +247,7 @@ where
     // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
     // to enter after fully receiving a packet.
     // Possible targets: IDLE, FSTON, TX, RX
-    pub fn receive(&mut self, addr: &mut u8, buf: &mut [u8]) -> Result<u8, Error<E>> {
+    pub fn receive(&mut self, addr: &mut u8, buf: &mut [u8]) -> Result<u8, Error<SpiE, GpioE>> {
         match self.rx_bytes_available() {
             Ok(_nbytes) => {
                 let mut length = 0u8;
