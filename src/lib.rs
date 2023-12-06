@@ -48,6 +48,7 @@ where
         Ok(Cc1101(lowlevel::Cc1101::new(spi, cs)?))
     }
 
+    /// Sets the carrier frequency (in Hertz).
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (freq0, freq1, freq2) = from_frequency(hz);
         self.0.write_register(Config::FREQ0, freq0)?;
@@ -65,6 +66,7 @@ where
         Ok(())
     }
 
+    /// Sets the data rate (in bits per second).
     pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_drate(baud);
         self.0
@@ -73,6 +75,7 @@ where
         Ok(())
     }
 
+    /// Sets the channel bandwidth (in Hertz).
     pub fn set_chanbw(&mut self, bandwidth: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_chanbw(bandwidth);
         self.0.modify_register(Config::MDMCFG4, |r| {
@@ -190,6 +193,12 @@ where
             }
         };
         self.await_machine_state(target)
+    }
+
+    /// Resets the chip.
+    pub fn reset(&mut self) -> Result<(), Error<SpiE, GpioE>> {
+        self.0.write_strobe(Command::SRES)?;
+        Ok(())
     }
 
     /// Configure some default settings, to be removed in the future.
