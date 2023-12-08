@@ -1,6 +1,6 @@
 # `cc1101`
 
-> A platform agnostic driver to interface with the CC1101 (Sub-1GHz RF Transceiver)   
+> A platform agnostic driver to interface with the CC1101 (Sub-1GHz RF Transceiver)
 
 <a href="https://travis-ci.org/dsvensson/cc1101" alt="Build Status">
         <img src="https://travis-ci.org/dsvensson/cc1101.svg?branch=master" /></a>
