@@ -8,7 +8,7 @@ description = "A platform agnostic driver to interface with the CC1101 (Sub-1GHz
 documentation = "https://docs.rs/cc1101"
 license = "Apache-2.0"
 repository = "https://github.com/dsvensson/cc1101"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 embedded-hal = "0.2.3"
