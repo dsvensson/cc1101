@@ -188,7 +188,7 @@ where
     }
 
     /// Configure some default settings, to be removed in the future.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     pub fn set_defaults(&mut self) -> Result<(), Error<SpiE, GpioE>> {
         self.0.write_strobe(Command::SRES)?;
 
