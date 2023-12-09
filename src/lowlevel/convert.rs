@@ -35,10 +35,12 @@ mod tests {
 
     #[test]
     fn test_frequency() {
+        assert_eq!(from_frequency(0_000_000), (0x00, 0x00, 0x00)); // Maybe irrelevant
         assert_eq!(from_frequency(433_000_000), (0x62, 0xA7, 0x10));
         assert_eq!(from_frequency(868_000_000), (0x76, 0x62, 0x21));
         assert_eq!(from_frequency(902_000_000), (0x3B, 0xB1, 0x22));
         assert_eq!(from_frequency(918_000_000), (0xC4, 0x4E, 0x23));
+        assert_eq!(from_frequency(1_000_000_000), (0x27, 0x76, 0x26)); // Maybe irrelevant
     }
 
     #[test]
