@@ -17,7 +17,12 @@ pub const fn from_deviation(v: u64) -> (u8, u8) {
 // TODO: Not defined for all values, need to figure out.
 pub const fn from_drate(v: u64) -> (u8, u8) {
     let exponent = 64 - (v.rotate_left(19) / FXOSC).leading_zeros();
-    let mantissa = ((v.rotate_left(27)) / (FXOSC.rotate_left(exponent - 1))) - 255;
+    let division = (v.rotate_left(27)) / (FXOSC.rotate_left(exponent - 1));
+    let mantissa = if division >= 255 {
+        division - 255
+    } else {
+        todo!()
+    };
     // When mantissa is 256, wrap to zero and increase exponent by one
     [(mantissa as u8, exponent as u8), (0u8, (exponent + 1) as u8)][(mantissa == 256) as usize]
 }
@@ -76,7 +81,7 @@ mod tests {
         assert_eq!((131, 6), from_drate(2398));
         assert_eq!((131, 5), from_drate(1199));
 
-        /* TODO: make this work
+        // TODO: make this work
         fn calc_drate_rev(mantissa: u8, exponent: u8) -> u64 {
             let q = (256.0 + mantissa as f64) * 2f64.powf(exponent as f64);
             let p = 2f64.powf(28.0);
@@ -86,10 +91,9 @@ mod tests {
             for m in 0..255 {
                 let baud = calc_drate_rev(m, e);
                 let (mp, ep) = from_drate(baud);
-                assert_eq!((mp, ep), (m as u64, e as u64));
+                assert_eq!((mp, ep), (m, e));
             }
         }
-        */
     }
 
     #[test]
