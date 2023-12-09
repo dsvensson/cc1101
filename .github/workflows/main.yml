@@ -1,0 +1,13 @@
+name: build targets
+on: [push, pull_request]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: rust-lang/simpleinfra/github-actions/simple-ci@master
+        with:
+          check_fmt: true
