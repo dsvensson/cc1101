@@ -88,6 +88,17 @@ where
         Ok(())
     }
 
+    pub fn write_register_burst<R>(&mut self, reg: R, byte_array: &[u8]) -> Result<(), Error<SpiE, GpioE>>
+    where
+        R: Into<Register>,
+    {
+        self.cs.set_low().map_err(Error::Gpio)?;
+        self.spi.write(&[reg.into().waddr() | access::Mode::Burst as u8]).map_err(Error::Spi)?;
+        self.spi.write(byte_array).map_err(Error::Spi)?;
+        self.cs.set_high().map_err(Error::Gpio)?;
+        Ok(())
+    }
+
     pub fn modify_register<R, F>(&mut self, reg: R, f: F) -> Result<(), Error<SpiE, GpioE>>
     where
         R: Into<Register> + Copy,
