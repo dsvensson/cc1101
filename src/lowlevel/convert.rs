@@ -19,7 +19,11 @@ pub const fn from_drate(v: u64) -> (u8, u8) {
     let exponent = 64 - (v.rotate_left(19) / FXOSC).leading_zeros();
     let mantissa = ((v.rotate_left(27)) / (FXOSC.rotate_left(exponent - 1))) - 255;
     // When mantissa is 256, wrap to zero and increase exponent by one
-    [(mantissa as u8, exponent as u8), (0u8, (exponent + 1) as u8)][(mantissa == 256) as usize]
+    if mantissa == 256 {
+        (0u8, (exponent + 1) as u8)
+    } else {
+        (mantissa as u8, exponent as u8)
+    }
 }
 
 pub fn from_chanbw(v: u64) -> (u8, u8) {
