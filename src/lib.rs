@@ -314,6 +314,15 @@ where
             }
         }
     }
+
+    /// Configures raw data to be passed through, without any packet handling.
+    pub fn set_raw_mode(&mut self) -> Result<(), Error<SpiE, GpioE>> {
+        // Serial data output.
+        self.0.write_register(Config::IOCFG0, 0x0d)?;
+        // Disable data whitening and CRC, fixed packet length, asynchronous serial mode.
+        self.0.write_register(Config::PKTCTRL0, 0x30)?;
+        Ok(())
+    }
 }
 
 /// Modulation format configuration.
