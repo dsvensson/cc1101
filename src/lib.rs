@@ -57,6 +57,13 @@ where
         Ok(())
     }
 
+    /// Sets the frequency synthesizer intermediate frequency (in Hertz).
+    pub fn set_synthesizer_if(&mut self, hz: u64) -> Result<(), Error<SpiE, GpioE>> {
+        self.0
+            .write_register(Config::FSCTRL1, FSCTRL1::default().freq_if(from_freq_if(hz)).bits())?;
+        Ok(())
+    }
+
     pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
@@ -210,9 +217,7 @@ where
             .white_data(0).bits()
         )?;
 
-        self.0.write_register(Config::FSCTRL1, FSCTRL1::default()
-            .freq_if(0x08).bits() // f_if = (f_osc / 2^10) * FREQ_IF
-        )?;
+        self.set_synthesizer_if(203_125)?;
 
         self.0.write_register(Config::MDMCFG2, MDMCFG2::default()
             .dem_dcfilt_off(1).bits()
