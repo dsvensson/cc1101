@@ -8,7 +8,7 @@ pub use self::status::*;
 
 use crate::lowlevel::access;
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Register {
     Command(command::Command),
     Config(config::Config),

@@ -1,6 +1,6 @@
 /// Radio hardware machine states.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum MachineState {
     SLEEP = 0x00,
     IDLE = 0x01,

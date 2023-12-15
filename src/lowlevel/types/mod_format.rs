@@ -1,6 +1,6 @@
 /// Modulation format configuration.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ModFormat {
     /// 2-FSK.
     MOD_2FSK = 0x00,

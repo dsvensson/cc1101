@@ -270,6 +270,7 @@ where
 }
 
 /// Modulation format configuration.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Modulation {
     /// 2-FSK.
     BinaryFrequencyShiftKeying,
@@ -284,6 +285,7 @@ pub enum Modulation {
 }
 
 /// Packet length configuration.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PacketLength {
     /// Set packet length to a fixed value.
     Fixed(u8),
@@ -294,6 +296,7 @@ pub enum PacketLength {
 }
 
 /// Address check configuration.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AddressFilter {
     /// No address check.
     Disabled,
@@ -306,6 +309,7 @@ pub enum AddressFilter {
 }
 
 /// Radio operational mode.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum RadioMode {
     Receive,
     Transmit,
@@ -313,6 +317,7 @@ pub enum RadioMode {
 }
 
 /// Sync word configuration.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum SyncMode {
     /// No sync word.
     Disabled,

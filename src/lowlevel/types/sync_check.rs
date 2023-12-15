@@ -1,6 +1,6 @@
 /// Sync word qualifier mode configuration.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum SyncCheck {
     /// No preamble/sync.
     DISABLED = 0x00,
