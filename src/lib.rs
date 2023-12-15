@@ -37,7 +37,7 @@ impl<SpiE, GpioE> From<lowlevel::Error<SpiE, GpioE>> for Error<SpiE, GpioE> {
 }
 
 /// High level API for interacting with the CC1101 radio chip.
-pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
+pub struct Cc1101<SPI, CS>(pub lowlevel::Cc1101<SPI, CS>);
 
 impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>
 where
