@@ -14,15 +14,31 @@ pub const fn from_deviation(v: u64) -> (u8, u8) {
     ((mantissa & 0x7) as u8, (exponent & 0x7) as u8)
 }
 
-// TODO: Not defined for all values, need to figure out.
-pub const fn from_drate(v: u64) -> (u8, u8) {
-    let exponent = 64 - (v.rotate_left(19) / FXOSC).leading_zeros();
-    let mantissa = ((v.rotate_left(27)) / (FXOSC.rotate_left(exponent - 1))) - 255;
-    // When mantissa is 256, wrap to zero and increase exponent by one
-    if mantissa == 256 {
-        (0u8, (exponent + 1) as u8)
-    } else {
-        (mantissa as u8, exponent as u8)
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct DataRate {
+    pub(crate) mantissa: u8,
+    pub(crate) exponent: u8,
+    pub(crate) data_rate_hz: u64,
+}
+impl DataRate {
+    // TODO: Not defined for all values, need to figure out.
+    pub(crate) const fn new(data_rate_hz: u64) -> Self {
+        let exponent = 64 - (data_rate_hz.rotate_left(19) / FXOSC).leading_zeros();
+        let mantissa = (data_rate_hz.rotate_left(27) / (FXOSC.rotate_left(exponent - 1))) - 255;
+        // When mantissa is 256, wrap to zero and increase exponent by one
+        if mantissa == 256 {
+            Self {
+                mantissa: 0u8,
+                exponent: (exponent + 1) as u8,
+                data_rate_hz,
+            }
+        } else {
+            Self {
+                mantissa: mantissa as u8,
+                exponent: exponent as u8,
+                data_rate_hz,
+            }
+        }
     }
 }
 
@@ -64,19 +80,110 @@ mod tests {
     #[test]
     fn test_drate() {
         // Some sample settings from SmartRF Studio
-        assert_eq!((117, 5), from_drate(1156));
-        assert_eq!((117, 7), from_drate(4624));
-        assert_eq!((117, 10), from_drate(36994));
-        assert_eq!((34, 12), from_drate(115051));
-        assert_eq!((59, 14), from_drate(499877));
-        assert_eq!((59, 13), from_drate(249938));
-        assert_eq!((248, 11), from_drate(99975));
-        assert_eq!((131, 11), from_drate(76766));
-        assert_eq!((131, 10), from_drate(38383));
-        assert_eq!((147, 8), from_drate(9992));
-        assert_eq!((131, 7), from_drate(4797));
-        assert_eq!((131, 6), from_drate(2398));
-        assert_eq!((131, 5), from_drate(1199));
+        assert_eq!(
+            DataRate {
+                mantissa: 117,
+                exponent: 5,
+                data_rate_hz: 1156
+            },
+            DataRate::new(1156)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 117,
+                exponent: 7,
+                data_rate_hz: 4_624
+            },
+            DataRate::new(4_624)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 117,
+                exponent: 10,
+                data_rate_hz: 36_994
+            },
+            DataRate::new(36_994)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 34,
+                exponent: 12,
+                data_rate_hz: 115_051,
+            },
+            DataRate::new(115_051)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 59,
+                exponent: 14,
+                data_rate_hz: 499_877
+            },
+            DataRate::new(499_877)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 59,
+                exponent: 13,
+                data_rate_hz: 249_938
+            },
+            DataRate::new(249_938)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 248,
+                exponent: 11,
+                data_rate_hz: 99_975
+            },
+            DataRate::new(99_975)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 131,
+                exponent: 11,
+                data_rate_hz: 76_766
+            },
+            DataRate::new(76_766)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 131,
+                exponent: 10,
+                data_rate_hz: 38_383
+            },
+            DataRate::new(38_383)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 147,
+                exponent: 8,
+                data_rate_hz: 9_992
+            },
+            DataRate::new(9_992)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 131,
+                exponent: 7,
+                data_rate_hz: 4_797
+            },
+            DataRate::new(4_797)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 131,
+                exponent: 6,
+                data_rate_hz: 2_398
+            },
+            DataRate::new(2_398)
+        );
+        assert_eq!(
+            DataRate {
+                mantissa: 131,
+                exponent: 5,
+                data_rate_hz: 1_199
+            },
+            DataRate::new(1_199)
+        );
 
         /* TODO: make this work
         fn calc_drate_rev(mantissa: u8, exponent: u8) -> u64 {
