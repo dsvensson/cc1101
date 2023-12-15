@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Mode {
     Single = 0x00,
     Burst = 0x40,

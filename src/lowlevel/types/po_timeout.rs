@@ -1,6 +1,6 @@
 /// Programs the number of times the six-bit ripple counter must expire after XOSC has stabilized before CHP_RDYn goes low.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PoTimeout {
     /// Approx. 2.3 – 2.4 μs.
     EXPIRE_COUNT_1 = 0x00,

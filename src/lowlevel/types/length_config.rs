@@ -1,6 +1,6 @@
 /// Packet length configuration.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum LengthConfig {
     /// Fixed packet length mode. Length configured in PKTLEN register.
     FIXED = 0x00,

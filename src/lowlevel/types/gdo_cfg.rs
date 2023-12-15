@@ -1,6 +1,6 @@
 /// General Purpose Control Pin Configuration.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum GdoCfg {
     /// Associated to the RX FIFO: Asserts when RX FIFO is filled at or above the RX FIFO threshold. De-asserts when RX FIFO is drained below the same threshold.
     RX_FIFO_FILLED = 0x00,

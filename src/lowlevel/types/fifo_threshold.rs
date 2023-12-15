@@ -1,6 +1,6 @@
 /// TX FIFO and RX FIFO threshold configuration.
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FifoThreshold {
     /// 61 bytes in TX, 4 bytes in RX.
     TX_61_RX_4 = 0x00,
