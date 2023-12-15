@@ -64,6 +64,14 @@ where
         Ok(())
     }
 
+    /// Sets the target value for the averaged amplitude from the digital channel filter.
+    pub fn set_agc_target(&mut self, target: TargetAmplitude) -> Result<(), Error<SpiE, GpioE>> {
+        self.0.modify_register(Config::AGCCTRL2, |r| {
+            AGCCTRL2(r).modify().magn_target(target.into()).bits()
+        })?;
+        Ok(())
+    }
+
     pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
@@ -347,4 +355,32 @@ pub enum SyncMode {
     MatchPartialRepeated(u16),
     /// Match 16 of 16 bits of given sync word.
     MatchFull(u16),
+}
+
+/// Target amplitude for AGC.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum TargetAmplitude {
+    /// 24 dB
+    Db24 = 0,
+    /// 27 dB
+    Db27 = 1,
+    /// 30 dB
+    Db30 = 2,
+    /// 33 dB
+    Db33 = 3,
+    /// 36 dB
+    Db36 = 4,
+    /// 38 dB
+    Db38 = 5,
+    /// 40 dB
+    Db40 = 6,
+    /// 42 dB
+    Db42 = 7,
+}
+
+impl From<TargetAmplitude> for u8 {
+    fn from(value: TargetAmplitude) -> Self {
+        value as Self
+    }
 }
