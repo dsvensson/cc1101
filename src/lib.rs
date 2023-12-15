@@ -65,8 +65,18 @@ where
         Ok(())
     }
 
+    /// This fn programs the chip with the user requested baud rate, we
+    /// sanitize the input to be less than 600_000 bps and greater than 600 bps.
     pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE, GpioE>> {
-        let (mantissa, exponent) = from_drate(baud);
+        // This bound is set from the value 600kbps that's declared in:
+        // https://www.ti.com/lit/ds/symlink/cc1101.pdf
+        assert!(baud < 600_000, "Value {} exceeds maximum.", baud);
+        assert!(baud > 600, "Value {} is less than minimum.", baud);
+        let DataRate {
+            mantissa,
+            exponent,
+            data_rate_hz: _,
+        } = lowlevel::convert::DataRate::new(baud);
         self.0
             .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
         self.0.write_register(Config::MDMCFG3, MDMCFG3::default().drate_m(mantissa).bits())?;
