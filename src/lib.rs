@@ -66,7 +66,11 @@ where
     }
 
     pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE, GpioE>> {
-        let (mantissa, exponent) = from_drate(baud);
+        let DataRate {
+            mantissa,
+            exponent,
+            data_rate_hz: _,
+        } = lowlevel::convert::DataRate::new(baud);
         self.0
             .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
         self.0.write_register(Config::MDMCFG3, MDMCFG3::default().drate_m(mantissa).bits())?;
