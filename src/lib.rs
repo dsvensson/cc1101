@@ -83,6 +83,17 @@ where
         Ok(())
     }
 
+    /// Configures when to run automatic calibration.
+    pub fn set_autocalibration(
+        &mut self,
+        autocal: AutoCalibration,
+    ) -> Result<(), Error<SpiE, GpioE>> {
+        self.0.modify_register(Config::MCSM0, |r| {
+            MCSM0(r).modify().fs_autocal(autocal.into()).bits()
+        })?;
+        Ok(())
+    }
+
     pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
@@ -242,9 +253,7 @@ where
             .dem_dcfilt_off(1).bits()
         )?;
 
-        self.0.write_register(Config::MCSM0, MCSM0::default()
-            .fs_autocal(AutoCalibration::FROM_IDLE.value()).bits()
-        )?;
+        self.set_autocalibration(AutoCalibration::FromIdle)?;
 
         self.0.write_register(Config::AGCCTRL2, AGCCTRL2::default()
             .max_lna_gain(0x04).bits()
