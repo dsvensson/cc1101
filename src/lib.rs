@@ -72,6 +72,17 @@ where
         Ok(())
     }
 
+    /// Sets the filter length (in FSK/MSK mode) or decision boundary (in OOK/ASK mode) for the AGC.
+    pub fn set_agc_filter_length(
+        &mut self,
+        filter_length: FilterLength,
+    ) -> Result<(), Error<SpiE, GpioE>> {
+        self.0.modify_register(Config::AGCCTRL0, |r| {
+            AGCCTRL0(r).modify().filter_length(filter_length.into()).bits()
+        })?;
+        Ok(())
+    }
+
     pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE, GpioE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
@@ -381,6 +392,26 @@ pub enum TargetAmplitude {
 
 impl From<TargetAmplitude> for u8 {
     fn from(value: TargetAmplitude) -> Self {
+        value as Self
+    }
+}
+
+/// Channel filter samples or OOK/ASK decision boundary for AGC.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum FilterLength {
+    /// 8 filter samples for FSK/MSK, or 4 dB for OOK/ASK.
+    Samples8 = 0,
+    /// 16 filter samples for FSK/MSK, or 8 dB for OOK/ASK.
+    Samples16 = 1,
+    /// 32 filter samples for FSK/MSK, or 12 dB for OOK/ASK.
+    Samples32 = 2,
+    /// 64 filter samples for FSK/MSK, or 16 dB for OOK/ASK.
+    Samples64 = 3,
+}
+
+impl From<FilterLength> for u8 {
+    fn from(value: FilterLength) -> Self {
         value as Self
     }
 }
