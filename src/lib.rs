@@ -65,7 +65,13 @@ where
         Ok(())
     }
 
+    /// This fn programs the chip with the user requested baud rate, we
+    /// sanitize the input to be less than 600_000 bps and greater than 600 bps.
     pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE, GpioE>> {
+        // This bound is set from the value 600kbps that's declared in:
+        // https://www.ti.com/lit/ds/symlink/cc1101.pdf
+        assert!(baud < 600_000, "Value {} exceeds maximum.", baud);
+        assert!(baud > 600, "Value {} is less than minimum.", baud);
         let DataRate {
             mantissa,
             exponent,

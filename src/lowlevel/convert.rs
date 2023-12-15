@@ -23,8 +23,8 @@ pub(crate) struct DataRate {
 impl DataRate {
     // TODO: Not defined for all values, need to figure out.
     pub(crate) const fn new(data_rate_hz: u64) -> Self {
-        let exponent = 64 - (data_rate_hz.rotate_left(19) / FXOSC).leading_zeros();
-        let mantissa = (data_rate_hz.rotate_left(27) / (FXOSC.rotate_left(exponent - 1))) - 255;
+        let exponent = 64 - ((data_rate_hz << 19) / FXOSC).leading_zeros();
+        let mantissa = ((data_rate_hz << 27) / (FXOSC.rotate_left(exponent - 1))) - 255;
         // When mantissa is 256, wrap to zero and increase exponent by one
         if mantissa == 256 {
             Self {
