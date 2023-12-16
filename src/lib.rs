@@ -166,7 +166,7 @@ where
         Ok(())
     }
 
-    /// Set radio in Receive/Transmit/Idle mode.
+    /// Set radio in Receive/Transmit/Idle/Calibrate mode.
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE, GpioE>> {
         let target = match radio_mode {
             RadioMode::Receive => {
@@ -181,6 +181,11 @@ where
             }
             RadioMode::Idle => {
                 self.0.write_strobe(Command::SIDLE)?;
+                MachineState::IDLE
+            }
+            RadioMode::Calibrate => {
+                self.set_radio_mode(RadioMode::Idle)?;
+                self.0.write_strobe(Command::SCAL)?;
                 MachineState::IDLE
             }
         };
@@ -314,6 +319,7 @@ pub enum RadioMode {
     Receive,
     Transmit,
     Idle,
+    Calibrate,
 }
 
 /// Sync word configuration.
