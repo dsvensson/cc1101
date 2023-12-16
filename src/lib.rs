@@ -225,6 +225,11 @@ where
         Ok(())
     }
 
+    pub fn write_patable(&mut self, patable_values: &[u8]) -> Result<(), Error<SpiE, GpioE>> {
+        self.0.write_register_burst(Command::PATABLE, patable_values)?;
+        Ok(())
+    }
+
     fn rx_bytes_available(&mut self) -> Result<u8, Error<SpiE, GpioE>> {
         let mut last = 0;
 
