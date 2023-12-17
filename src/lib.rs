@@ -58,7 +58,7 @@ impl<SpiE: Display + core::fmt::Debug, GpioE: Display + core::fmt::Debug> std::e
 }
 
 /// High level API for interacting with the CC1101 radio chip.
-pub struct Cc1101<SPI, CS>(lowlevel::Cc1101<SPI, CS>);
+pub struct Cc1101<SPI, CS>(pub lowlevel::Cc1101<SPI, CS>);
 
 impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>
 where
