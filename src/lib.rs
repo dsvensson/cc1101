@@ -2,6 +2,9 @@
 
 extern crate embedded_hal as hal;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use core::fmt::{self, Display, Formatter};
 use hal::blocking::spi::{Transfer, Write};
 use hal::digital::v2::OutputPin;
@@ -46,6 +49,12 @@ impl<SpiE: Display, GpioE: Display> Display for Error<SpiE, GpioE> {
             Self::Gpio(e) => write!(f, "GPIO error: {}", e),
         }
     }
+}
+
+#[cfg(feature = "std")]
+impl<SpiE: Display + core::fmt::Debug, GpioE: Display + core::fmt::Debug> std::error::Error
+    for Error<SpiE, GpioE>
+{
 }
 
 /// High level API for interacting with the CC1101 radio chip.

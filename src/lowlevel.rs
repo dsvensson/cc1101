@@ -39,6 +39,12 @@ impl<SpiE: Display, GpioE: Display> Display for Error<SpiE, GpioE> {
     }
 }
 
+#[cfg(feature = "std")]
+impl<SpiE: Display + core::fmt::Debug, GpioE: Display + core::fmt::Debug> std::error::Error
+    for Error<SpiE, GpioE>
+{
+}
+
 impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>
 where
     SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
