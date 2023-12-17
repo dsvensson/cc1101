@@ -1,4 +1,6 @@
 //! Low level unrestricted access to the CC1101 radio chip.
+
+use core::fmt::{self, Display, Formatter};
 use hal::blocking::spi::{Transfer, Write};
 use hal::digital::v2::OutputPin;
 
@@ -26,6 +28,15 @@ pub struct Cc1101<SPI, CS> {
 pub enum Error<SpiE, GpioE> {
     Spi(SpiE),
     Gpio(GpioE),
+}
+
+impl<SpiE: Display, GpioE: Display> Display for Error<SpiE, GpioE> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::Spi(e) => write!(f, "SPI error: {}", e),
+            Self::Gpio(e) => write!(f, "GPIO error: {}", e),
+        }
+    }
 }
 
 impl<SPI, CS, SpiE, GpioE> Cc1101<SPI, CS>

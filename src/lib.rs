@@ -2,6 +2,7 @@
 
 extern crate embedded_hal as hal;
 
+use core::fmt::{self, Display, Formatter};
 use hal::blocking::spi::{Transfer, Write};
 use hal::digital::v2::OutputPin;
 
@@ -32,6 +33,17 @@ impl<SpiE, GpioE> From<lowlevel::Error<SpiE, GpioE>> for Error<SpiE, GpioE> {
         match e {
             lowlevel::Error::Spi(inner) => Error::Spi(inner),
             lowlevel::Error::Gpio(inner) => Error::Gpio(inner),
+        }
+    }
+}
+
+impl<SpiE: Display, GpioE: Display> Display for Error<SpiE, GpioE> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::RxOverflow => write!(f, "RX FIFO buffer overflowed"),
+            Self::CrcMismatch => write!(f, "CRC mismatch"),
+            Self::Spi(e) => write!(f, "SPI error: {}", e),
+            Self::Gpio(e) => write!(f, "GPIO error: {}", e),
         }
     }
 }
