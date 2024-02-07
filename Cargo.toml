@@ -1,6 +1,6 @@
 [package]
 name = "cc1101"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Daniel Svensson <dsvensson@gmail.com>", "Ferdia McKeogh <chocol4te@users.noreply.github.com>"]
 categories = ["embedded", "hardware-support", "no-std"]
 keywords = ["embedded-hal-driver", "radio", "transceiver", "embedded-hal", "cc1101"]
