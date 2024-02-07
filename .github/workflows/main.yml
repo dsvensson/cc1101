@@ -13,7 +13,7 @@ jobs:
           check_fmt: true
 
       - name: Publish crate
-        run: cargo publish --token ${CRATES_IO_TOKEN}
-        env:
-          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: |
+          cargo login ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish
         if: startsWith(github.event.ref, 'refs/tags/v')
