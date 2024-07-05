@@ -48,7 +48,11 @@ where
     }
 
     pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), SpiE> {
-        let mut buffer = [MultiByte::FIFO.addr(access::Access::Read, access::Mode::Burst), BLANK_BYTE, BLANK_BYTE];
+        let mut buffer = [
+            MultiByte::FIFO.addr(access::Access::Read, access::Mode::Burst),
+            BLANK_BYTE,
+            BLANK_BYTE,
+        ];
 
         self.spi.transaction(&mut [
             Operation::TransferInPlace(&mut buffer),
