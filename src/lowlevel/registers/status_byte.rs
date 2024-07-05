@@ -1,8 +1,9 @@
 /// Indicates the current main state machine mode
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum State {
     /// IDLE state (Also reported for some transitional states instead of SETTLING or CALIBRATE)
+    #[default]
     IDLE = 0b000,
     /// Receive mode
     RX = 0b001,
@@ -18,12 +19,6 @@ pub enum State {
     RXFIFO_OVERFLOW = 0b110,
     /// TX FIFO has underflowed. Acknowledge with SFTX
     TXFIFO_UNDERFLOW = 0b111,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::IDLE
-    }
 }
 
 impl From<u8> for State {
@@ -54,7 +49,7 @@ impl From<u8> for StatusByte {
     fn from(value: u8) -> Self {
         let status_byte = STATUS_BYTE(value);
         StatusByte {
-            chip_rdy: !(status_byte.chip_rdyn() != 0),
+            chip_rdy: (status_byte.chip_rdyn() == 0),
             state: State::from(status_byte.state()),
             fifo_bytes_available: status_byte.fifo_bytes_available(),
         }

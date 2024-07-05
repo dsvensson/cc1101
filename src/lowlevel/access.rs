@@ -4,8 +4,8 @@ pub enum Mode {
     Burst = 0x40,
 }
 
-impl Mode {
-    pub fn offset(self, addr: u8) -> u8 {
-        (self as u8) | addr
-    }
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Access {
+    Read = 0x80,
+    Write = 0x00,
 }

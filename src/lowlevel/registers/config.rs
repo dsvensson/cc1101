@@ -97,14 +97,18 @@ pub enum Config {
 }
 
 impl Config {
-    pub fn addr(&self) -> u8 {
-        *self as u8
+    pub fn addr(
+        &self,
+        access: crate::lowlevel::access::Access,
+        mode: crate::lowlevel::access::Mode,
+    ) -> u8 {
+        (access as u8) | (mode as u8) | (*self as u8)
     }
 }
 
 impl From<Config> for crate::lowlevel::registers::Register {
-    fn from(val: Config) -> Self {
-        crate::lowlevel::registers::Register::Config(val)
+    fn from(value: Config) -> Self {
+        crate::lowlevel::registers::Register::Config(value)
     }
 }
 
