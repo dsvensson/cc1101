@@ -58,6 +58,11 @@ where
         Ok(Cc1101(lowlevel::Cc1101::new(spi)?))
     }
 
+    /// Last Chip Status Byte
+    pub fn get_chip_status(&mut self) -> Option<StatusByte> {
+        self.0.status
+    }
+
     /// Sets the carrier frequency (in Hertz).
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
         let (freq0, freq1, freq2) = from_frequency(hz);
@@ -218,21 +223,21 @@ where
         let target = match radio_mode {
             RadioMode::Receive => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_strobe(Command::SRX)?;
+                self.0.write_cmd_strobe(Command::SRX)?;
                 MachineState::RX
             }
             RadioMode::Transmit => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_strobe(Command::STX)?;
+                self.0.write_cmd_strobe(Command::STX)?;
                 MachineState::TX
             }
             RadioMode::Idle => {
-                self.0.write_strobe(Command::SIDLE)?;
+                self.0.write_cmd_strobe(Command::SIDLE)?;
                 MachineState::IDLE
             }
             RadioMode::Calibrate => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_strobe(Command::SCAL)?;
+                self.0.write_cmd_strobe(Command::SCAL)?;
                 MachineState::IDLE
             }
         };
@@ -241,14 +246,14 @@ where
 
     /// Resets the chip.
     pub fn reset(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_strobe(Command::SRES)?;
+        self.0.write_cmd_strobe(Command::SRES)?;
         Ok(())
     }
 
     /// Configure some default settings, to be removed in the future.
     #[rustfmt::skip]
     pub fn set_defaults(&mut self) -> Result<(), Error<SpiE, >> {
-        self.0.write_strobe(Command::SRES)?;
+        self.0.write_cmd_strobe(Command::SRES)?;
 
         self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
             .white_data(0).bits()
@@ -308,7 +313,7 @@ where
                 self.0.read_fifo(addr, &mut length, buf)?;
                 let lqi = self.0.read_register(Status::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
-                self.0.write_strobe(Command::SFRX)?;
+                self.0.write_cmd_strobe(Command::SFRX)?;
                 if (lqi >> 7) != 1 {
                     Err(Error::CrcMismatch)
                 } else {
@@ -316,7 +321,7 @@ where
                 }
             }
             Err(err) => {
-                self.0.write_strobe(Command::SFRX)?;
+                self.0.write_cmd_strobe(Command::SFRX)?;
                 Err(err)
             }
         }

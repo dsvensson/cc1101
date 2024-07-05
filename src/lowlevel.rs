@@ -14,11 +14,13 @@ pub mod types;
 use self::registers::*;
 
 pub const FXOSC: u64 = 26_000_000;
+const BLANK_BYTE: u8 = 0;
 
 pub struct Cc1101<SPI> {
     pub(crate) spi: SPI,
-    //    gdo0: GDO0,
-    //    gdo2: GDO2,
+    pub status: Option<StatusByte>,
+    // gdo0: GDO0,
+    // gdo2: GDO2,
 }
 
 impl<SPI, SpiE> Cc1101<SPI>
@@ -28,6 +30,7 @@ where
     pub fn new(spi: SPI) -> Result<Self, SpiE> {
         let cc1101 = Cc1101 {
             spi,
+            status: None,
         };
         Ok(cc1101)
     }
@@ -36,8 +39,11 @@ where
     where
         R: Into<Register>,
     {
-        let mut buffer = [reg.into().raddr(), 0u8];
+        let mut buffer = [reg.into().raddr(), BLANK_BYTE];
+
         self.spi.transfer_in_place(&mut buffer)?;
+
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(buffer[1])
     }
 
@@ -52,11 +58,23 @@ where
         *len = buffer[1];
         *addr = buffer[2];
 
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(())
     }
 
-    pub fn write_strobe(&mut self, com: Command) -> Result<(), SpiE> {
-        self.spi.write(&[com.addr()])?;
+    pub fn write_cmd_strobe(&mut self, cmd: Command) -> Result<(), SpiE> {
+        let mut buffer = [cmd.addr()];
+
+        self.spi.transfer_in_place(&mut buffer)?;
+
+        if cmd == Command::SNOP {
+            // SNOP is the only command with no effect and therefore can be used to get access to the chip status byte
+            self.status = Some(StatusByte::from(buffer[0]));
+        } else {
+            // Discard returned chip status byte in `buffer[0]` as most probably, it will reflect the previous state
+            // Set status to `None`, to inform the user about lack of valid state read
+            self.status = None;
+        }
         Ok(())
     }
 
@@ -64,7 +82,11 @@ where
     where
         R: Into<Register>,
     {
-        self.spi.write(&[reg.into().waddr(), byte])?;
+        let mut buffer = [reg.into().waddr(), byte];
+
+        self.spi.transfer_in_place(&mut buffer)?;
+
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(())
     }
 
@@ -75,6 +97,7 @@ where
     {
         let r = self.read_register(reg)?;
         self.write_register(reg, f(r))?;
+
         Ok(())
     }
 }
