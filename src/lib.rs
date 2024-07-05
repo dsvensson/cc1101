@@ -59,7 +59,7 @@ where
     }
 
     /// Last Chip Status Byte
-    pub fn get_last_chip_status_byte(&mut self) -> StatusByte {
+    pub fn get_last_chip_status_byte(&mut self) -> Option<StatusByte> {
         self.0.status
     }
 

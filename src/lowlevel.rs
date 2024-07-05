@@ -18,7 +18,7 @@ const BLANK_BYTE: u8 = 0;
 
 pub struct Cc1101<SPI> {
     pub(crate) spi: SPI,
-    pub status: StatusByte,
+    pub status: Option<StatusByte>,
     // gdo0: GDO0,
     // gdo2: GDO2,
 }
@@ -30,7 +30,7 @@ where
     pub fn new(spi: SPI) -> Result<Self, SpiE> {
         let cc1101 = Cc1101 {
             spi,
-            status: StatusByte::default(),
+            status: None,
         };
         Ok(cc1101)
     }
@@ -43,7 +43,7 @@ where
 
         self.spi.transfer_in_place(&mut buffer)?;
 
-        self.status = StatusByte::from(buffer[0]);
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(buffer[1])
     }
 
@@ -58,7 +58,7 @@ where
         *len = buffer[1];
         *addr = buffer[2];
 
-        self.status = StatusByte::from(buffer[0]);
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(())
     }
 
@@ -67,7 +67,14 @@ where
 
         self.spi.transfer_in_place(&mut buffer)?;
 
-        self.status = StatusByte::from(buffer[0]);
+        if cmd == Command::SNOP {
+            // SNOP is the only command with no effect and therefore can be used to get access to the chip status byte
+            self.status = Some(StatusByte::from(buffer[0]));
+        } else {
+            // Discard returned chip status byte in `buffer[0]` as most probably, it will reflect the previous state
+            // Set status to `None`, to inform the user about lack of valid state read
+            self.status = None;
+        }
         Ok(())
     }
 
@@ -79,7 +86,7 @@ where
 
         self.spi.transfer_in_place(&mut buffer)?;
 
-        self.status = StatusByte::from(buffer[0]);
+        self.status = Some(StatusByte::from(buffer[0]));
         Ok(())
     }
 
