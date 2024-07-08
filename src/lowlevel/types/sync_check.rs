@@ -20,8 +20,8 @@ pub enum SyncCheck {
     CHECK_30_32_CS = 0x07,
 }
 
-impl SyncCheck {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<SyncCheck> for u8 {
+    fn from(value: SyncCheck) -> Self {
+        value as u8
     }
 }
