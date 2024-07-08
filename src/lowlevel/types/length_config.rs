@@ -1,6 +1,7 @@
 /// Packet length configuration.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum LengthConfig {
     /// Fixed packet length mode. Length configured in PKTLEN register.
     FIXED = 0x00,
@@ -12,6 +13,6 @@ pub enum LengthConfig {
 
 impl From<LengthConfig> for u8 {
     fn from(value: LengthConfig) -> Self {
-        value as u8
+        value as Self
     }
 }

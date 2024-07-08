@@ -10,12 +10,12 @@ use hal::spi::SpiDevice;
 
 #[macro_use]
 pub mod lowlevel;
-mod rssi;
+mod types;
 
 use lowlevel::convert::*;
 use lowlevel::registers::*;
 use lowlevel::types::*;
-use rssi::rssi_to_dbm;
+pub use types::*;
 
 /// CC1101 errors.
 #[derive(Debug)]
@@ -144,7 +144,7 @@ where
 
     /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
     pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<SpiE>> {
-        Ok(rssi_to_dbm(self.0.read_register(Status::RSSI)?))
+        Ok(from_rssi_to_rssi_dbm(self.0.read_register(Status::RSSI)?))
     }
 
     /// The Link Quality Indicator metric of the current quality of the received signal.
@@ -233,35 +233,19 @@ where
         }
     }
 
-    /// Set radio in Receive/Transmit/Idle/Calibrate mode.
-    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE>> {
-        let target = match radio_mode {
-            RadioMode::Receive => {
-                self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::SRX)?;
-                MachineState::RX
-            }
-            RadioMode::Transmit => {
-                self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::STX)?;
-                MachineState::TX
-            }
-            RadioMode::Idle => {
-                self.0.write_cmd_strobe(Command::SIDLE)?;
-                MachineState::IDLE
-            }
-            RadioMode::Calibrate => {
-                self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::SCAL)?;
-                MachineState::IDLE
-            }
-        };
-        self.await_machine_state(target)
-    }
-
     /// Resets the chip.
     pub fn reset(&mut self) -> Result<(), Error<SpiE>> {
         self.0.write_cmd_strobe(Command::SRES)?;
+        Ok(())
+    }
+
+    fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
+        loop {
+            let machine_state = self.read_machine_state()?;
+            if target_state == machine_state {
+                break;
+            }
+        }
         Ok(())
     }
 
@@ -289,14 +273,33 @@ where
         Ok(())
     }
 
-    fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
-        loop {
-            let machine_state = self.read_machine_state()?;
-            if target_state == machine_state {
-                break;
+    /// Set radio in Idle/Sleep/Calibrate/Transmit/Receive mode.
+    pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE>> {
+        let target = match radio_mode {
+            RadioMode::Idle => {
+                self.0.write_cmd_strobe(Command::SIDLE)?;
+                MachineState::IDLE
             }
-        }
-        Ok(())
+            RadioMode::Sleep => {
+                todo!()
+            }
+            RadioMode::Calibrate => {
+                self.set_radio_mode(RadioMode::Idle)?;
+                self.0.write_cmd_strobe(Command::SCAL)?;
+                MachineState::IDLE
+            }
+            RadioMode::Transmit => {
+                self.set_radio_mode(RadioMode::Idle)?;
+                self.0.write_cmd_strobe(Command::STX)?;
+                MachineState::TX
+            }
+            RadioMode::Receive => {
+                self.set_radio_mode(RadioMode::Idle)?;
+                self.0.write_cmd_strobe(Command::SRX)?;
+                MachineState::RX
+            }
+        };
+        self.await_machine_state(target)
     }
 
     fn rx_bytes_available(&mut self) -> Result<u8, Error<SpiE>> {
@@ -349,114 +352,5 @@ where
         // Disable data whitening and CRC, fixed packet length, asynchronous serial mode.
         self.0.write_register(Config::PKTCTRL0, 0x30)?;
         Ok(())
-    }
-}
-
-/// Modulation format configuration.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Modulation {
-    /// 2-FSK.
-    BinaryFrequencyShiftKeying,
-    /// GFSK.
-    GaussianFrequencyShiftKeying,
-    /// ASK / OOK.
-    OnOffKeying,
-    /// 4-FSK.
-    FourFrequencyShiftKeying,
-    /// MSK.
-    MinimumShiftKeying,
-}
-
-/// Packet length configuration.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum PacketLength {
-    /// Set packet length to a fixed value.
-    Fixed(u8),
-    /// Set upper bound of variable packet length.
-    Variable(u8),
-    /// Infinite packet length, streaming mode.
-    Infinite,
-}
-
-/// Address check configuration.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum AddressFilter {
-    /// No address check.
-    Disabled,
-    /// Address check, no broadcast.
-    Device(u8),
-    /// Address check and 0 (0x00) broadcast.
-    DeviceLowBroadcast(u8),
-    /// Address check and 0 (0x00) and 255 (0xFF) broadcast.
-    DeviceHighLowBroadcast(u8),
-}
-
-/// Radio operational mode.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum RadioMode {
-    Receive,
-    Transmit,
-    Idle,
-    Calibrate,
-}
-
-/// Sync word configuration.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum SyncMode {
-    /// No sync word.
-    Disabled,
-    /// Match 15 of 16 bits of given sync word.
-    MatchPartial(u16),
-    /// Match 30 of 32 bits of a repetition of given sync word.
-    MatchPartialRepeated(u16),
-    /// Match 16 of 16 bits of given sync word.
-    MatchFull(u16),
-}
-
-/// Target amplitude for AGC.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[repr(u8)]
-pub enum TargetAmplitude {
-    /// 24 dB
-    Db24 = 0,
-    /// 27 dB
-    Db27 = 1,
-    /// 30 dB
-    Db30 = 2,
-    /// 33 dB
-    Db33 = 3,
-    /// 36 dB
-    Db36 = 4,
-    /// 38 dB
-    Db38 = 5,
-    /// 40 dB
-    Db40 = 6,
-    /// 42 dB
-    Db42 = 7,
-}
-
-impl From<TargetAmplitude> for u8 {
-    fn from(value: TargetAmplitude) -> Self {
-        value as Self
-    }
-}
-
-/// Channel filter samples or OOK/ASK decision boundary for AGC.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[repr(u8)]
-pub enum FilterLength {
-    /// 8 filter samples for FSK/MSK, or 4 dB for OOK/ASK.
-    Samples8 = 0,
-    /// 16 filter samples for FSK/MSK, or 8 dB for OOK/ASK.
-    Samples16 = 1,
-    /// 32 filter samples for FSK/MSK, or 12 dB for OOK/ASK.
-    Samples32 = 2,
-    /// 64 filter samples for FSK/MSK, or 16 dB for OOK/ASK.
-    Samples64 = 3,
-}
-
-impl From<FilterLength> for u8 {
-    fn from(value: FilterLength) -> Self {
-        value as Self
     }
 }

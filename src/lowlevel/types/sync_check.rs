@@ -1,6 +1,7 @@
 /// Sync word qualifier mode configuration.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum SyncCheck {
     /// No preamble/sync.
     DISABLED = 0x00,
@@ -22,6 +23,6 @@ pub enum SyncCheck {
 
 impl From<SyncCheck> for u8 {
     fn from(value: SyncCheck) -> Self {
-        value as u8
+        value as Self
     }
 }

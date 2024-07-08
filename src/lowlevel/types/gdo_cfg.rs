@@ -1,6 +1,7 @@
 /// General Purpose Control Pin Configuration.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum GdoCfg {
     /// Associated to the RX FIFO: Asserts when RX FIFO is filled at or above the RX FIFO threshold. De-asserts when RX FIFO is drained below the same threshold.
     RX_FIFO_FILLED = 0x00,
@@ -102,6 +103,6 @@ pub enum GdoCfg {
 
 impl From<GdoCfg> for u8 {
     fn from(value: GdoCfg) -> Self {
-        value as u8
+        value as Self
     }
 }

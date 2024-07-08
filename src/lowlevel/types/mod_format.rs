@@ -1,6 +1,7 @@
 /// Modulation format configuration.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum ModFormat {
     /// 2-FSK.
     MOD_2FSK = 0x00,
@@ -16,6 +17,6 @@ pub enum ModFormat {
 
 impl From<ModFormat> for u8 {
     fn from(value: ModFormat) -> Self {
-        value as u8
+        value as Self
     }
 }
