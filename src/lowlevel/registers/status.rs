@@ -32,14 +32,18 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn addr(&self) -> u8 {
-        *self as u8
+    pub fn addr(
+        &self,
+        access: crate::lowlevel::access::Access,
+        mode: crate::lowlevel::access::Mode,
+    ) -> u8 {
+        (access as u8) | (mode as u8) | (*self as u8)
     }
 }
 
 impl From<Status> for crate::lowlevel::registers::Register {
-    fn from(val: Status) -> Self {
-        crate::lowlevel::registers::Register::Status(val)
+    fn from(value: Status) -> Self {
+        crate::lowlevel::registers::Register::Status(value)
     }
 }
 
@@ -54,7 +58,7 @@ register!(VERSION, 0b0001_0100, u8, {
 });
 
 register!(FREQEST, 0b0000_0000, u8, {
-    #[doc = "The estimated frequency offset (2’s complement) of the carrier"]
+    #[doc = "The estimated frequency offset (2's complement) of the carrier"]
     freqoff_est @ 0..7,
 });
 

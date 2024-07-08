@@ -39,7 +39,7 @@ where
     where
         R: Into<Register>,
     {
-        let mut buffer = [reg.into().raddr(), BLANK_BYTE];
+        let mut buffer = [reg.into().raddr(access::Mode::Single), BLANK_BYTE];
 
         self.spi.transfer_in_place(&mut buffer)?;
 
@@ -48,7 +48,11 @@ where
     }
 
     pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), SpiE> {
-        let mut buffer = [Command::FIFO.addr() | 0xC0, 0, 0];
+        let mut buffer = [
+            MultiByte::FIFO.addr(access::Access::Read, access::Mode::Burst),
+            BLANK_BYTE,
+            BLANK_BYTE,
+        ];
 
         self.spi.transaction(&mut [
             Operation::TransferInPlace(&mut buffer),
@@ -62,8 +66,20 @@ where
         Ok(())
     }
 
+    pub fn access_fifo(&mut self, access: access::Access, data: &mut [u8]) -> Result<(), SpiE> {
+        let mut buffer = [MultiByte::FIFO.addr(access, access::Mode::Burst)];
+
+        self.spi.transaction(&mut [
+            Operation::TransferInPlace(&mut buffer),
+            Operation::TransferInPlace(data),
+        ])?;
+
+        self.status = Some(StatusByte::from(buffer[0]));
+        Ok(())
+    }
+
     pub fn write_cmd_strobe(&mut self, cmd: Command) -> Result<(), SpiE> {
-        let mut buffer = [cmd.addr()];
+        let mut buffer = [cmd.addr(access::Access::Write, access::Mode::Single)];
 
         self.spi.transfer_in_place(&mut buffer)?;
 
@@ -82,7 +98,7 @@ where
     where
         R: Into<Register>,
     {
-        let mut buffer = [reg.into().waddr(), byte];
+        let mut buffer = [reg.into().waddr(access::Mode::Single), byte];
 
         self.spi.transfer_in_place(&mut buffer)?;
 
