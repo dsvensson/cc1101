@@ -12,8 +12,8 @@ pub enum PoTimeout {
     EXPIRE_COUNT_256 = 0x03,
 }
 
-impl PoTimeout {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<PoTimeout> for u8 {
+    fn from(value: PoTimeout) -> Self {
+        value as u8
     }
 }

@@ -12,8 +12,8 @@ pub enum NumPreamble {
     N_24 = 0x07,
 }
 
-impl NumPreamble {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<NumPreamble> for u8 {
+    fn from(value: NumPreamble) -> Self {
+        value as u8
     }
 }

@@ -14,8 +14,8 @@ pub enum ModFormat {
     MOD_MSK = 0x07,
 }
 
-impl ModFormat {
-    pub fn value(self) -> u8 {
-        self as u8
+impl From<ModFormat> for u8 {
+    fn from(value: ModFormat) -> Self {
+        value as u8
     }
 }

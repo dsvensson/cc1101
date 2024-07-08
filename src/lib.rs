@@ -24,6 +24,8 @@ pub enum Error<SpiE> {
     RxOverflow,
     /// Corrupt packet received with invalid CRC.
     CrcMismatch,
+    /// Invalid state read from MARCSTATE register
+    InvalidState(u8),
     /// Platform-dependent SPI-errors, such as IO errors.
     Spi(SpiE),
 }
@@ -39,6 +41,7 @@ impl<SpiE: Display> Display for Error<SpiE> {
         match self {
             Self::RxOverflow => write!(f, "RX FIFO buffer overflowed"),
             Self::CrcMismatch => write!(f, "CRC mismatch"),
+            Self::InvalidState(s) => write!(f, "Invalid state: {}", s),
             Self::Spi(e) => write!(f, "SPI error: {}", e),
         }
     }
@@ -161,7 +164,7 @@ where
             SyncMode::MatchFull(word) => (SyncCheck::CHECK_16_16, word),
         };
         self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().sync_mode(mode.value()).bits()
+            MDMCFG2(r).modify().sync_mode(mode.into()).bits()
         })?;
         self.0.write_register(Config::SYNC1, ((word >> 8) & 0xff) as u8)?;
         self.0.write_register(Config::SYNC0, (word & 0xff) as u8)?;
@@ -180,7 +183,7 @@ where
             Modulation::MinimumShiftKeying => MF::MOD_MSK,
         };
         self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().mod_format(value.value()).bits()
+            MDMCFG2(r).modify().mod_format(value.into()).bits()
         })?;
         Ok(())
     }
@@ -196,7 +199,7 @@ where
             AddressFilter::DeviceHighLowBroadcast(addr) => (AC::SELF_HIGH_LOW_BROADCAST, addr),
         };
         self.0.modify_register(Config::PKTCTRL1, |r| {
-            PKTCTRL1(r).modify().adr_chk(mode.value()).bits()
+            PKTCTRL1(r).modify().adr_chk(mode.into()).bits()
         })?;
         self.0.write_register(Config::ADDR, addr)?;
         Ok(())
@@ -212,10 +215,22 @@ where
             PacketLength::Infinite => (LC::INFINITE, PKTLEN::default().bits()),
         };
         self.0.modify_register(Config::PKTCTRL0, |r| {
-            PKTCTRL0(r).modify().length_config(format.value()).bits()
+            PKTCTRL0(r).modify().length_config(format.into()).bits()
         })?;
         self.0.write_register(Config::PKTLEN, pktlen)?;
         Ok(())
+    }
+
+    /// Read the Machine State
+    pub fn read_machine_state(&mut self) -> Result<MachineState, Error<SpiE>> {
+        let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
+
+        match MachineState::try_from(marcstate.marc_state()) {
+            Ok(state) => Ok(state),
+            Err(e) => match e {
+                MachineStateError::InvalidState(value) => Err(Error::InvalidState(value)),
+            },
+        }
     }
 
     /// Set radio in Receive/Transmit/Idle/Calibrate mode.
@@ -274,10 +289,10 @@ where
         Ok(())
     }
 
-    fn await_machine_state(&mut self, target: MachineState) -> Result<(), Error<SpiE>> {
+    fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
         loop {
-            let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
-            if target.value() == marcstate.marc_state() {
+            let machine_state = self.read_machine_state()?;
+            if target_state == machine_state {
                 break;
             }
         }

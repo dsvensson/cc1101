@@ -10,8 +10,8 @@ pub enum LengthConfig {
     INFINITE = 0x02,
 }
 
-impl LengthConfig {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<LengthConfig> for u8 {
+    fn from(value: LengthConfig) -> Self {
+        value as u8
     }
 }

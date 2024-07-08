@@ -36,8 +36,8 @@ pub enum FifoThreshold {
     TX_1_RX_64 = 0x0F,
 }
 
-impl FifoThreshold {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<FifoThreshold> for u8 {
+    fn from(value: FifoThreshold) -> Self {
+        value as u8
     }
 }

@@ -100,8 +100,8 @@ pub enum GdoCfg {
     CLK_XOSC_192 = 0x3F,
 }
 
-impl GdoCfg {
-    pub fn value(&self) -> u8 {
-        *self as u8
+impl From<GdoCfg> for u8 {
+    fn from(value: GdoCfg) -> Self {
+        value as u8
     }
 }
