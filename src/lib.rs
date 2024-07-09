@@ -66,6 +66,25 @@ where
         self.0.status
     }
 
+    pub fn command_strobe(&mut self, command_strobe: CommandStrobe) -> Result<(), Error<SpiE>> {
+        let command = match command_strobe {
+            CommandStrobe::ResetChip => Command::SRES,
+            CommandStrobe::EnableAndCalFreqSynth => Command::SFSTXON,
+            CommandStrobe::TurnOffXosc => Command::SXOFF,
+            CommandStrobe::CalFreqSynthAndTurnOff => Command::SCAL,
+            CommandStrobe::EnableRx => Command::SRX,
+            CommandStrobe::EnableTx => Command::STX,
+            CommandStrobe::ExitRxTx => Command::SIDLE,
+            CommandStrobe::StartWakeOnRadio => Command::SWOR,
+            CommandStrobe::EnterPowerDownMode => Command::SPWD,
+            CommandStrobe::FlushRxFifoBuffer => Command::SFRX,
+            CommandStrobe::FlushTxFifoBuffer => Command::SFTX,
+            CommandStrobe::ResetRtcToEvent1 => Command::SWORRST,
+            CommandStrobe::NoOperation => Command::SNOP,
+        };
+        Ok(self.0.write_cmd_strobe(command)?)
+    }
+
     /// Sets the carrier frequency (in Hertz).
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
         let (freq0, freq1, freq2) = from_frequency(hz);
@@ -76,14 +95,14 @@ where
     }
 
     /// Sets the frequency synthesizer intermediate frequency (in Hertz).
-    pub fn set_synthesizer_if(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
+    pub fn set_freq_if(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
         self.0
             .write_register(Config::FSCTRL1, FSCTRL1::default().freq_if(from_freq_if(hz)).bits())?;
         Ok(())
     }
 
     /// Sets the target value for the averaged amplitude from the digital channel filter.
-    pub fn set_agc_target(&mut self, target: TargetAmplitude) -> Result<(), Error<SpiE>> {
+    pub fn set_magn_target(&mut self, target: TargetAmplitude) -> Result<(), Error<SpiE>> {
         self.0.modify_register(Config::AGCCTRL2, |r| {
             AGCCTRL2(r).modify().magn_target(target.into()).bits()
         })?;
@@ -91,10 +110,7 @@ where
     }
 
     /// Sets the filter length (in FSK/MSK mode) or decision boundary (in OOK/ASK mode) for the AGC.
-    pub fn set_agc_filter_length(
-        &mut self,
-        filter_length: FilterLength,
-    ) -> Result<(), Error<SpiE>> {
+    pub fn set_filter_length(&mut self, filter_length: FilterLength) -> Result<(), Error<SpiE>> {
         self.0.modify_register(Config::AGCCTRL0, |r| {
             AGCCTRL0(r).modify().filter_length(filter_length.into()).bits()
         })?;
@@ -233,12 +249,6 @@ where
         }
     }
 
-    /// Resets the chip.
-    pub fn reset(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SRES)?;
-        Ok(())
-    }
-
     fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
         loop {
             let machine_state = self.read_machine_state()?;
@@ -251,14 +261,14 @@ where
 
     /// Configure some default settings, to be removed in the future.
     #[rustfmt::skip]
-    pub fn set_defaults(&mut self) -> Result<(), Error<SpiE, >> {
-        self.0.write_cmd_strobe(Command::SRES)?;
+    pub fn set_defaults(&mut self) -> Result<(), Error<SpiE>> {
+        self.command_strobe(CommandStrobe::ResetChip)?;
 
         self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
             .white_data(0).bits()
         )?;
 
-        self.set_synthesizer_if(203_125)?;
+        self.set_freq_if(203_125)?;
 
         self.0.write_register(Config::MDMCFG2, MDMCFG2::default()
             .dem_dcfilt_off(1).bits()
@@ -277,25 +287,27 @@ where
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE>> {
         let target = match radio_mode {
             RadioMode::Idle => {
-                self.0.write_cmd_strobe(Command::SIDLE)?;
+                self.command_strobe(CommandStrobe::ExitRxTx)?;
                 MachineState::IDLE
             }
             RadioMode::Sleep => {
-                todo!()
+                self.set_radio_mode(RadioMode::Idle)?;
+                self.command_strobe(CommandStrobe::EnterPowerDownMode)?;
+                MachineState::SLEEP
             }
             RadioMode::Calibrate => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::SCAL)?;
-                MachineState::IDLE
+                self.command_strobe(CommandStrobe::CalFreqSynthAndTurnOff)?;
+                MachineState::MANCAL
             }
             RadioMode::Transmit => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::STX)?;
+                self.command_strobe(CommandStrobe::EnableTx)?;
                 MachineState::TX
             }
             RadioMode::Receive => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.0.write_cmd_strobe(Command::SRX)?;
+                self.command_strobe(CommandStrobe::EnableRx)?;
                 MachineState::RX
             }
         };
@@ -331,7 +343,7 @@ where
                 self.0.read_fifo(addr, &mut length, buf)?;
                 let lqi = self.0.read_register(Status::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
-                self.0.write_cmd_strobe(Command::SFRX)?;
+                self.command_strobe(CommandStrobe::FlushRxFifoBuffer)?;
                 if (lqi >> 7) != 1 {
                     Err(Error::CrcMismatch)
                 } else {
@@ -339,7 +351,7 @@ where
                 }
             }
             Err(err) => {
-                self.0.write_cmd_strobe(Command::SFRX)?;
+                self.command_strobe(CommandStrobe::FlushRxFifoBuffer)?;
                 Err(err)
             }
         }
