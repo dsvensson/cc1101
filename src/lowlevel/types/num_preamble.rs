@@ -1,6 +1,7 @@
 /// Number of preamble bytes to be transmitted.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum NumPreamble {
     N_2 = 0x00,
     N_3 = 0x01,
@@ -14,6 +15,6 @@ pub enum NumPreamble {
 
 impl From<NumPreamble> for u8 {
     fn from(value: NumPreamble) -> Self {
-        value as u8
+        value as Self
     }
 }

@@ -1,6 +1,7 @@
 /// TX FIFO and RX FIFO threshold configuration.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum FifoThreshold {
     /// 61 bytes in TX, 4 bytes in RX.
     TX_61_RX_4 = 0x00,
@@ -38,6 +39,6 @@ pub enum FifoThreshold {
 
 impl From<FifoThreshold> for u8 {
     fn from(value: FifoThreshold) -> Self {
-        value as u8
+        value as Self
     }
 }

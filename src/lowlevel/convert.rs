@@ -1,6 +1,8 @@
 use crate::lowlevel::FXOSC;
 use core::convert::TryInto;
 
+const RSSI_OFFSET: i16 = 74; // Table 31: Typical RSSI_offset Values
+
 pub const fn from_frequency(hz: u64) -> (u8, u8, u8) {
     let freq = hz * 1u64.rotate_left(16) / FXOSC;
     let freq0 = (freq & 0xff) as u8;
@@ -36,6 +38,16 @@ pub fn from_chanbw(v: u64) -> (u8, u8) {
 pub fn from_freq_if(hz: u64) -> u8 {
     // Round towards the closest setting, rather than down.
     (((hz << 10) + FXOSC / 2) / FXOSC).try_into().unwrap()
+}
+
+pub fn from_rssi_to_rssi_dbm(rssi: u8) -> i16 {
+    let rssi = rssi as i16;
+    // According to spec 17.3
+    if rssi < 128 {
+        rssi / 2 - RSSI_OFFSET
+    } else {
+        (rssi - 256) / 2 - RSSI_OFFSET
+    }
 }
 
 #[cfg(test)]

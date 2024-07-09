@@ -1,5 +1,6 @@
 /// Configure what state transitions result in auto-calibration.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum AutoCalibration {
     /// Never (manually calibrate using SCAL strobe).
     Disabled = 0x00,
@@ -12,7 +13,7 @@ pub enum AutoCalibration {
 }
 
 impl From<AutoCalibration> for u8 {
-    fn from(value: AutoCalibration) -> u8 {
-        value as u8
+    fn from(value: AutoCalibration) -> Self {
+        value as Self
     }
 }
