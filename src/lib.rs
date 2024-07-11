@@ -66,23 +66,82 @@ where
         self.0.status
     }
 
-    pub fn command_strobe(&mut self, command_strobe: CommandStrobe) -> Result<(), Error<SpiE>> {
-        let command = match command_strobe {
-            CommandStrobe::ResetChip => Command::SRES,
-            CommandStrobe::EnableAndCalFreqSynth => Command::SFSTXON,
-            CommandStrobe::TurnOffXosc => Command::SXOFF,
-            CommandStrobe::CalFreqSynthAndTurnOff => Command::SCAL,
-            CommandStrobe::EnableRx => Command::SRX,
-            CommandStrobe::EnableTx => Command::STX,
-            CommandStrobe::ExitRxTx => Command::SIDLE,
-            CommandStrobe::StartWakeOnRadio => Command::SWOR,
-            CommandStrobe::EnterPowerDownMode => Command::SPWD,
-            CommandStrobe::FlushRxFifoBuffer => Command::SFRX,
-            CommandStrobe::FlushTxFifoBuffer => Command::SFTX,
-            CommandStrobe::ResetRtcToEvent1 => Command::SWORRST,
-            CommandStrobe::NoOperation => Command::SNOP,
-        };
-        Ok(self.0.write_cmd_strobe(command)?)
+    /// Command Strobe: Reset chip
+    pub fn reset_chip(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SRES)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Enable and calibrate frequency synthesizer
+    pub fn enable_and_cal_freq_synth(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SFSTXON)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Turn off crystal oscillator
+    pub fn turn_off_xosc(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SXOFF)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Calibrate frequency synthesizer and turn it off
+    pub fn cal_freq_synth_and_turn_off(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SCAL)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Enable RX
+    pub fn enable_rx(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SRX)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Enable TX
+    pub fn enable_tx(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::STX)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Exit RX / TX, turn off frequency synthesizer
+    pub fn exit_rx_tx(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SIDLE)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Start automatic RX polling sequence (Wake-on-Radio)
+    pub fn start_wake_on_radio(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SWOR)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Enter power down mode when CSn goes high
+    pub fn enter_power_down_mode(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SPWD)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Flush the RX FIFO buffer
+    pub fn flush_rx_fifo_buffer(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SFRX)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Flush the TX FIFO buffer
+    pub fn flush_tx_fifo_buffer(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SFTX)?;
+        Ok(())
+    }
+
+    /// Command Strobe: Reset real time clock to Event1 value
+    pub fn reset_rtc_to_event1(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SWORRST)?;
+        Ok(())
+    }
+
+    /// Command Strobe: No operation. May be used to get access to the chip status byte
+    pub fn no_operation(&mut self) -> Result<(), Error<SpiE>> {
+        self.0.write_cmd_strobe(Command::SNOP)?;
+        Ok(())
     }
 
     /// Sets the carrier frequency (in Hertz).
@@ -262,7 +321,7 @@ where
     /// Configure some default settings, to be removed in the future.
     #[rustfmt::skip]
     pub fn set_defaults(&mut self) -> Result<(), Error<SpiE>> {
-        self.command_strobe(CommandStrobe::ResetChip)?;
+        self.reset_chip()?;
 
         self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
             .white_data(0).bits()
@@ -287,27 +346,27 @@ where
     pub fn set_radio_mode(&mut self, radio_mode: RadioMode) -> Result<(), Error<SpiE>> {
         let target = match radio_mode {
             RadioMode::Idle => {
-                self.command_strobe(CommandStrobe::ExitRxTx)?;
+                self.exit_rx_tx()?;
                 MachineState::IDLE
             }
             RadioMode::Sleep => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.command_strobe(CommandStrobe::EnterPowerDownMode)?;
+                self.enter_power_down_mode()?;
                 MachineState::SLEEP
             }
             RadioMode::Calibrate => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.command_strobe(CommandStrobe::CalFreqSynthAndTurnOff)?;
+                self.cal_freq_synth_and_turn_off()?;
                 MachineState::MANCAL
             }
             RadioMode::Transmit => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.command_strobe(CommandStrobe::EnableTx)?;
+                self.enable_tx()?;
                 MachineState::TX
             }
             RadioMode::Receive => {
                 self.set_radio_mode(RadioMode::Idle)?;
-                self.command_strobe(CommandStrobe::EnableRx)?;
+                self.enable_rx()?;
                 MachineState::RX
             }
         };
@@ -343,7 +402,7 @@ where
                 self.0.read_fifo(addr, &mut length, buf)?;
                 let lqi = self.0.read_register(Status::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
-                self.command_strobe(CommandStrobe::FlushRxFifoBuffer)?;
+                self.flush_rx_fifo_buffer()?;
                 if (lqi >> 7) != 1 {
                     Err(Error::CrcMismatch)
                 } else {
@@ -351,7 +410,7 @@ where
                 }
             }
             Err(err) => {
-                self.command_strobe(CommandStrobe::FlushRxFifoBuffer)?;
+                self.flush_rx_fifo_buffer()?;
                 Err(err)
             }
         }

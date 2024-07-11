@@ -60,36 +60,6 @@ pub enum SyncMode {
     MatchFull(u16),
 }
 
-/// Command Strobes.
-pub enum CommandStrobe {
-    /// SRES
-    ResetChip,
-    /// SFSTXON
-    EnableAndCalFreqSynth,
-    /// SXOFF
-    TurnOffXosc,
-    /// SCAL
-    CalFreqSynthAndTurnOff,
-    /// SRX
-    EnableRx,
-    /// STX
-    EnableTx,
-    /// SIDLE
-    ExitRxTx,
-    /// SWOR
-    StartWakeOnRadio,
-    /// SPWD
-    EnterPowerDownMode,
-    /// SFRX
-    FlushRxFifoBuffer,
-    /// SFTX
-    FlushTxFifoBuffer,
-    /// SWORRST
-    ResetRtcToEvent1,
-    /// SNOP
-    NoOperation,
-}
-
 /// Target amplitude from channel filter.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
