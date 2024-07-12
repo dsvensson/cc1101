@@ -60,7 +60,7 @@ pub enum SyncMode {
     MatchFull(u16),
 }
 
-/// Target amplitude for AGC.
+/// Target amplitude from channel filter.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum TargetAmplitude {
