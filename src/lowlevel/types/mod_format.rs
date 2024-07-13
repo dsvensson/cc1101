@@ -1,22 +1,21 @@
-/// Modulation format configuration.
-#[allow(non_camel_case_types)]
+/// Modulation format.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
-pub enum ModFormat {
+pub enum ModulationFormat {
     /// 2-FSK.
-    MOD_2FSK = 0x00,
+    BinaryFrequencyShiftKeying = 0,
     /// GFSK.
-    MOD_GFSK = 0x01,
+    GaussianFrequencyShiftKeying = 1,
     /// ASK / OOK.
-    MOD_ASK_OOK = 0x03,
+    AmplitudeShiftOnOffKeying = 3,
     /// 4-FSK.
-    MOD_4FSK = 0x04,
+    QuaternaryFrequencyShiftKeying = 4,
     /// MSK.
-    MOD_MSK = 0x07,
+    MinimumShiftKeying = 7,
 }
 
-impl From<ModFormat> for u8 {
-    fn from(value: ModFormat) -> Self {
+impl From<ModulationFormat> for u8 {
+    fn from(value: ModulationFormat) -> Self {
         value as Self
     }
 }
