@@ -1,6 +1,8 @@
 mod address_check;
 mod auto_calibration;
+mod cca_mode;
 mod fifo_threshold;
+mod filter_length;
 mod gdo_cfg;
 mod length_config;
 mod machine_state;
@@ -8,10 +10,13 @@ mod mod_format;
 mod num_preamble;
 mod po_timeout;
 mod sync_check;
+mod target_amplitude;
 
 pub use self::address_check::*;
 pub use self::auto_calibration::*;
+pub use self::cca_mode::*;
 pub use self::fifo_threshold::*;
+pub use self::filter_length::*;
 pub use self::gdo_cfg::*;
 pub use self::length_config::*;
 pub use self::machine_state::*;
@@ -19,3 +24,4 @@ pub use self::mod_format::*;
 pub use self::num_preamble::*;
 pub use self::po_timeout::*;
 pub use self::sync_check::*;
+pub use self::target_amplitude::*;

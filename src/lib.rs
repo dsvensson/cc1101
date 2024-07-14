@@ -12,14 +12,14 @@ use hal::spi::SpiDevice;
 pub mod lowlevel;
 mod types;
 
-use lowlevel::convert::*;
-use lowlevel::registers::*;
-use lowlevel::types::*;
+use lowlevel::{convert::*, registers::*, types::*};
 pub use types::*;
 
 /// CC1101 errors.
 #[derive(Debug)]
 pub enum Error<SpiE> {
+    /// The TX FIFO buffer underflowed, too large packet for configured packet length.
+    TxUnderflow,
     /// The RX FIFO buffer overflowed, too small buffer for configured packet length.
     RxOverflow,
     /// Corrupt packet received with invalid CRC.
@@ -39,6 +39,7 @@ impl<SpiE> From<SpiE> for Error<SpiE> {
 impl<SpiE: Display> Display for Error<SpiE> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
+            Self::TxUnderflow => write!(f, "TX FIFO buffer underflowed"),
             Self::RxOverflow => write!(f, "RX FIFO buffer overflowed"),
             Self::CrcMismatch => write!(f, "CRC mismatch"),
             Self::InvalidState(s) => write!(f, "Invalid state: {}", s),
@@ -184,6 +185,7 @@ where
         Ok(())
     }
 
+    /// Set Modem deviation setting.
     pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
@@ -199,6 +201,30 @@ where
         self.0
             .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
         self.0.write_register(Config::MDMCFG3, MDMCFG3::default().drate_m(mantissa).bits())?;
+        Ok(())
+    }
+
+    /// Enable Forward Error Correction (FEC) with interleaving for packet payload
+    pub fn fec_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::MDMCFG1, |r| {
+            MDMCFG1(r).modify().fec_en(enable as u8).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Sets the minimum number of preamble bytes to be transmitted
+    pub fn set_num_preamble(&mut self, num_preamble: NumPreamble) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::MDMCFG1, |r| {
+            MDMCFG1(r).modify().num_preamble(num_preamble.into()).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Selects CCA_MODE; Reflected in CCA signal.
+    pub fn set_cca_mode(&mut self, cca_mode: CcaMode) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::MCSM1, |r| {
+            MCSM1(r).modify().cca_mode(cca_mode.into()).bits()
+        })?;
         Ok(())
     }
 
@@ -246,19 +272,13 @@ where
         Ok(())
     }
 
-    /// Configure signal modulation.
-    pub fn set_modulation(&mut self, format: Modulation) -> Result<(), Error<SpiE>> {
-        use lowlevel::types::ModFormat as MF;
-
-        let value = match format {
-            Modulation::BinaryFrequencyShiftKeying => MF::MOD_2FSK,
-            Modulation::GaussianFrequencyShiftKeying => MF::MOD_GFSK,
-            Modulation::OnOffKeying => MF::MOD_ASK_OOK,
-            Modulation::FourFrequencyShiftKeying => MF::MOD_4FSK,
-            Modulation::MinimumShiftKeying => MF::MOD_MSK,
-        };
+    /// Set the modulation format of the radio signal.
+    pub fn set_modulation_format(
+        &mut self,
+        mod_format: ModulationFormat,
+    ) -> Result<(), Error<SpiE>> {
         self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().mod_format(value.into()).bits()
+            MDMCFG2(r).modify().mod_format(mod_format.into()).bits()
         })?;
         Ok(())
     }
@@ -280,20 +300,58 @@ where
         Ok(())
     }
 
+    /// Turn data whitening on / off.
+    pub fn white_data_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::PKTCTRL0, |r| {
+            PKTCTRL0(r).modify().white_data(enable as u8).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Enable CRC calculation in TX and CRC check in RX
+    pub fn crc_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::PKTCTRL0, |r| {
+            PKTCTRL0(r).modify().crc_en(enable as u8).bits()
+        })?;
+        Ok(())
+    }
+
     /// Configure packet mode, and length.
     pub fn set_packet_length(&mut self, length: PacketLength) -> Result<(), Error<SpiE>> {
-        use lowlevel::types::LengthConfig as LC;
-
         let (format, pktlen) = match length {
-            PacketLength::Fixed(limit) => (LC::FIXED, limit),
-            PacketLength::Variable(max_limit) => (LC::VARIABLE, max_limit),
-            PacketLength::Infinite => (LC::INFINITE, PKTLEN::default().bits()),
+            PacketLength::Fixed(limit) => (LengthConfig::FIXED, limit),
+            PacketLength::Variable(max_limit) => (LengthConfig::VARIABLE, max_limit),
+            PacketLength::Infinite => (LengthConfig::INFINITE, PKTLEN::default().bits()),
         };
         self.0.modify_register(Config::PKTCTRL0, |r| {
             PKTCTRL0(r).modify().length_config(format.into()).bits()
         })?;
         self.0.write_register(Config::PKTLEN, pktlen)?;
         Ok(())
+    }
+
+    /// Read number of bytes in TX FIFO
+    pub fn read_tx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
+        let txbytes = TXBYTES(self.0.read_register(Status::TXBYTES)?);
+        let num_txbytes: u8 = txbytes.num_txbytes();
+
+        if txbytes.txfifo_underflow() != 0 {
+            return Err(Error::TxUnderflow);
+        }
+
+        Ok(num_txbytes)
+    }
+
+    /// Read number of bytes in RX FIFO
+    pub fn read_rx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
+        let rxbytes = RXBYTES(self.0.read_register(Status::RXBYTES)?);
+        let num_rxbytes: u8 = rxbytes.num_rxbytes();
+
+        if rxbytes.rxfifo_overflow() != 0 {
+            return Err(Error::RxOverflow);
+        }
+
+        Ok(num_rxbytes)
     }
 
     /// Read the Machine State
@@ -377,17 +435,13 @@ where
         let mut last = 0;
 
         loop {
-            let rxbytes = RXBYTES(self.0.read_register(Status::RXBYTES)?);
-            if rxbytes.rxfifo_overflow() == 1 {
-                return Err(Error::RxOverflow);
-            }
+            let num_rxbytes = self.read_rx_bytes()?;
 
-            let nbytes = rxbytes.num_rxbytes();
-            if nbytes > 0 && nbytes == last {
+            if (num_rxbytes > 0) && (num_rxbytes == last) {
                 break;
             }
 
-            last = nbytes;
+            last = num_rxbytes;
         }
         Ok(last)
     }
