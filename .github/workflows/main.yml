@@ -11,7 +11,7 @@ jobs:
       - name: Install rustfmt
         run: rustup component add rustfmt
       - name: Check formatting
-        run: cargo fmt -- --check --all
+        run: cargo fmt --all --check
       - name: Build
         run: cargo build --tests --workspace
       - name: Test
