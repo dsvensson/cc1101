@@ -8,9 +8,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: rust-lang/simpleinfra/github-actions/simple-ci@master
-        with:
-          check_fmt: true
+      - name: Install rustfmt
+        run: rustup component add rustfmt
+      - name: Check formatting
+        run: cargo fmt --all --check
+      - name: Build
+        run: cargo build --tests --workspace
+      - name: Test
+        run: cargo test --workspace
 
       - name: Publish crate
         run: |
