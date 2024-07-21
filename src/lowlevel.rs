@@ -14,6 +14,7 @@ pub mod types;
 use self::registers::*;
 
 pub const FXOSC: u64 = 26_000_000;
+pub const FIFO_SIZE_MAX: u8 = 64;
 const BLANK_BYTE: u8 = 0;
 
 pub struct Cc1101<SPI> {
