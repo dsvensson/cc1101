@@ -12,7 +12,8 @@ use hal::spi::SpiDevice;
 pub mod lowlevel;
 mod types;
 
-use lowlevel::{convert::*, registers::*, types::*};
+use lowlevel::{convert::*, registers::*};
+pub use lowlevel::{types::*, FIFO_SIZE_MAX};
 pub use types::*;
 
 /// CC1101 errors.
@@ -237,23 +238,6 @@ where
         Ok(())
     }
 
-    pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<SpiE>> {
-        let partnum = self.0.read_register(Status::PARTNUM)?;
-        let version = self.0.read_register(Status::VERSION)?;
-        Ok((partnum, version))
-    }
-
-    /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
-    pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<SpiE>> {
-        Ok(from_rssi_to_rssi_dbm(self.0.read_register(Status::RSSI)?))
-    }
-
-    /// The Link Quality Indicator metric of the current quality of the received signal.
-    pub fn get_lqi(&mut self) -> Result<u8, Error<SpiE>> {
-        let lqi = self.0.read_register(Status::LQI)?;
-        Ok(lqi & !(1u8 << 7))
-    }
-
     /// Configure the sync word to use, and at what level it should be verified.
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<SpiE>> {
         let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
@@ -330,8 +314,50 @@ where
         Ok(())
     }
 
+    /// Read hardware information: part number for CC1101 and current version number
+    pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<SpiE>> {
+        let partnum = self.0.read_register(Status::PARTNUM)?;
+        let version = self.0.read_register(Status::VERSION)?;
+        Ok((partnum, version))
+    }
+
+    /// Read Frequency Offset Estimate from Demodulator
+    /// Frequency offset compensation is only supported for 2-FSK, GFSK, 4-FSK, and MSK modulation.
+    /// This register will read 0 when using ASK or OOK modulation.
+    pub fn get_est_freq_offset(&mut self) -> Result<i32, Error<SpiE>> {
+        Ok(to_frequency_offset(self.0.read_register(Status::FREQEST)?))
+    }
+
+    /// Read Link Quality Indicator.
+    /// Note: Register field LQI.CRC_OK is ignored in this read because it's available also in the PKTSTATUS.CRC_OK register field.
+    pub fn get_lqi(&mut self) -> Result<u8, Error<SpiE>> {
+        Ok(LQI(self.0.read_register(Status::LQI)?).lqi())
+    }
+
+    /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
+    pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<SpiE>> {
+        Ok(from_rssi_to_rssi_dbm(self.0.read_register(Status::RSSI)?))
+    }
+
+    /// Read the Machine State
+    pub fn get_machine_state(&mut self) -> Result<MachineState, Error<SpiE>> {
+        let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
+
+        match MachineState::try_from(marcstate.marc_state()) {
+            Ok(state) => Ok(state),
+            Err(e) => match e {
+                MachineStateError::InvalidState(value) => Err(Error::InvalidState(value)),
+            },
+        }
+    }
+
+    /// Read the Current GDOx Status and Packet Status
+    pub fn get_packet_status(&mut self) -> Result<PacketStatus, Error<SpiE>> {
+        Ok(PKTSTATUS(self.0.read_register(Status::PKTSTATUS)?).into())
+    }
+
     /// Read number of bytes in TX FIFO
-    pub fn read_tx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
+    pub fn get_tx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
         let txbytes = TXBYTES(self.0.read_register(Status::TXBYTES)?);
         let num_txbytes: u8 = txbytes.num_txbytes();
 
@@ -343,7 +369,7 @@ where
     }
 
     /// Read number of bytes in RX FIFO
-    pub fn read_rx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
+    pub fn get_rx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
         let rxbytes = RXBYTES(self.0.read_register(Status::RXBYTES)?);
         let num_rxbytes: u8 = rxbytes.num_rxbytes();
 
@@ -354,21 +380,9 @@ where
         Ok(num_rxbytes)
     }
 
-    /// Read the Machine State
-    pub fn read_machine_state(&mut self) -> Result<MachineState, Error<SpiE>> {
-        let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
-
-        match MachineState::try_from(marcstate.marc_state()) {
-            Ok(state) => Ok(state),
-            Err(e) => match e {
-                MachineStateError::InvalidState(value) => Err(Error::InvalidState(value)),
-            },
-        }
-    }
-
     fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
         loop {
-            let machine_state = self.read_machine_state()?;
+            let machine_state = self.get_machine_state()?;
             if target_state == machine_state {
                 break;
             }
@@ -435,7 +449,7 @@ where
         let mut last = 0;
 
         loop {
-            let num_rxbytes = self.read_rx_bytes()?;
+            let num_rxbytes = self.get_rx_bytes()?;
 
             if (num_rxbytes > 0) && (num_rxbytes == last) {
                 break;
@@ -446,9 +460,9 @@ where
         Ok(last)
     }
 
-    // Should also be able to configure MCSM1.RXOFF_MODE to declare what state
-    // to enter after fully receiving a packet.
-    // Possible targets: IDLE, FSTON, TX, RX
+    /// Should also be able to configure MCSM1.RXOFF_MODE to declare what state
+    /// to enter after fully receiving a packet.
+    /// Possible targets: IDLE, FSTON, TX, RX
     pub fn receive(&mut self, addr: &mut u8, buf: &mut [u8]) -> Result<u8, Error<SpiE>> {
         match self.rx_bytes_available() {
             Ok(_nbytes) => {

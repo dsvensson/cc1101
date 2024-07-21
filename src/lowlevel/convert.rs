@@ -11,6 +11,14 @@ pub const fn from_frequency(hz: u64) -> (u8, u8, u8) {
     (freq0, freq1, freq2)
 }
 
+pub const fn from_frequency_offset(hz: i32) -> u8 {
+    ((hz as i64 * (1u64 << 14) as i64) / FXOSC as i64) as i8 as u8
+}
+
+pub const fn to_frequency_offset(value: u8) -> i32 {
+    (((value as i8) as i64 * FXOSC as i64) / (1u64 << 14) as i64) as i32
+}
+
 pub const fn from_deviation(v: u64) -> (u8, u8) {
     let exponent = 64 - (v.rotate_left(14) / FXOSC).leading_zeros() - 1;
     let mantissa = (v.rotate_left(17) / (FXOSC.rotate_left(exponent))) - 7;
@@ -61,6 +69,21 @@ mod tests {
         assert_eq!(from_frequency(868_000_000), (0x76, 0x62, 0x21));
         assert_eq!(from_frequency(902_000_000), (0x3B, 0xB1, 0x22));
         assert_eq!(from_frequency(918_000_000), (0xC4, 0x4E, 0x23));
+    }
+
+    #[test]
+    fn test_frequency_offset() {
+        assert_eq!(from_frequency_offset(0), 0);
+        assert_eq!(from_frequency_offset(1586 + 1), 1);
+        assert_eq!(from_frequency_offset(201538 + 1), 127);
+        assert_eq!(from_frequency_offset(-203125 + 0), 128);
+        assert_eq!(from_frequency_offset(-1586 - 1), 255);
+
+        assert_eq!(to_frequency_offset(0), 0);
+        assert_eq!(to_frequency_offset(1), 1586);
+        assert_eq!(to_frequency_offset(127), 201538);
+        assert_eq!(to_frequency_offset(128), -203125);
+        assert_eq!(to_frequency_offset(255), -1586);
     }
 
     #[test]
