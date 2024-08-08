@@ -4,9 +4,9 @@ use hal::spi::{Operation, SpiDevice};
 
 #[macro_use]
 mod macros;
-mod access;
 mod traits;
 
+pub mod access;
 pub mod convert;
 pub mod registers;
 pub mod types;
@@ -20,6 +20,8 @@ const BLANK_BYTE: u8 = 0;
 pub struct Cc1101<SPI> {
     pub(crate) spi: SPI,
     pub status: Option<StatusByte>,
+    pub length_field: bool,
+    pub address_field: bool,
     // gdo0: GDO0,
     // gdo2: GDO2,
 }
@@ -32,6 +34,8 @@ where
         let cc1101 = Cc1101 {
             spi,
             status: None,
+            length_field: false,
+            address_field: false,
         };
         Ok(cc1101)
     }
@@ -48,32 +52,26 @@ where
         Ok(buffer[1])
     }
 
-    pub fn read_fifo(&mut self, addr: &mut u8, len: &mut u8, buf: &mut [u8]) -> Result<(), SpiE> {
-        let mut buffer = [
-            MultiByte::FIFO.addr(access::Access::Read, access::Mode::Burst),
-            BLANK_BYTE,
-            BLANK_BYTE,
-        ];
-
-        self.spi.transaction(&mut [
-            Operation::TransferInPlace(&mut buffer),
-            Operation::TransferInPlace(buf),
-        ])?;
-
-        *len = buffer[1];
-        *addr = buffer[2];
-
-        self.status = Some(StatusByte::from(buffer[0]));
-        Ok(())
-    }
-
-    pub fn access_fifo(&mut self, access: access::Access, data: &mut [u8]) -> Result<(), SpiE> {
+    pub fn access_fifo(
+        &mut self,
+        access: access::Access,
+        optional_fields: &mut [u8],
+        data: &mut [u8],
+    ) -> Result<(), SpiE> {
         let mut buffer = [MultiByte::FIFO.addr(access, access::Mode::Burst)];
 
-        self.spi.transaction(&mut [
-            Operation::TransferInPlace(&mut buffer),
-            Operation::TransferInPlace(data),
-        ])?;
+        if optional_fields.is_empty() {
+            self.spi.transaction(&mut [
+                Operation::TransferInPlace(&mut buffer),
+                Operation::TransferInPlace(data),
+            ])?;
+        } else {
+            self.spi.transaction(&mut [
+                Operation::TransferInPlace(&mut buffer),
+                Operation::TransferInPlace(optional_fields),
+                Operation::TransferInPlace(data),
+            ])?;
+        }
 
         self.status = Some(StatusByte::from(buffer[0]));
         Ok(())
