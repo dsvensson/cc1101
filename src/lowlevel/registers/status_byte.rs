@@ -60,7 +60,7 @@ register!(STATUS_BYTE, 0b1000_0000, u8, {
     #[doc = "Stays high until power and crystal have stabilized. Should always be low when using the SPI interface."]
     chip_rdyn @ 7,
     #[doc = "Indicates the current main state machine mode"]
-    state @ 4..6,
+    state @ 4..7,
     #[doc = "The number of bytes available in the RX FIFO or free bytes in the TX FIFO"]
-    fifo_bytes_available @ 0..3,
+    fifo_bytes_available @ 0..4,
 });
