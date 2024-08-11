@@ -289,6 +289,24 @@ where
         Ok(())
     }
 
+    /// Enable automatic flush of RX FIFO when CRC is not OK.
+    /// This requires that only one packet is in the RX FIFO and that packet length is limited to the RX FIFO size.
+    pub fn crc_autoflush_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::PKTCTRL1, |r| {
+            PKTCTRL1(r).modify().crc_autoflush(enable as u8).bits()
+        })?;
+        Ok(())
+    }
+
+    /// When enabled, two status bytes will be appended to the payload of the packet.
+    /// The status bytes contain RSSI and LQI values, as well as CRC OK.
+    pub fn append_status_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::PKTCTRL1, |r| {
+            PKTCTRL1(r).modify().append_status(enable as u8).bits()
+        })?;
+        Ok(())
+    }
+
     /// Configure device address, and address filtering.
     pub fn set_address_filter(&mut self, filter: AddressFilter) -> Result<(), Error<SpiE>> {
         self.0.address_field = true;

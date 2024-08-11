@@ -49,44 +49,44 @@ impl From<Status> for crate::lowlevel::registers::Register {
 
 register!(PARTNUM, 0b0000_0000, u8, {
     #[doc = "Chip part number"]
-    partnum @ 0..7,
+    partnum @ 0..8,
 });
 
 register!(VERSION, 0b0001_0100, u8, {
     #[doc = "Chip version number"]
-    version @ 0..7,
+    version @ 0..8,
 });
 
 register!(FREQEST, 0b0000_0000, u8, {
     #[doc = "The estimated frequency offset (2's complement) of the carrier"]
-    freqoff_est @ 0..7,
+    freqoff_est @ 0..8,
 });
 
 register!(LQI, 0b0000_0000, u8, {
     #[doc = "The last CRC comparison matched."]
     crc_ok @ 7,
     #[doc = "The Link Quality Indicator estimates how easily a received signal can be demodulated"]
-    lqi @ 0..6,
+    lqi @ 0..7,
 });
 
 register!(RSSI, 0b0000_0000, u8, {
     #[doc = "Received signal strength indicator"]
-    rssi @ 0..7,
+    rssi @ 0..8,
 });
 
 register!(MARCSTATE, 0b0000_0000, u8, {
     #[doc = "Main Radio Control FSM State"]
-    marc_state @ 0..4,
+    marc_state @ 0..5,
 });
 
 register!(WORTIME1, 0b0000_0000, u8, {
     #[doc = "High byte of timer value in WOR module"]
-    time @ 0..7,
+    time @ 0..8,
 });
 
 register!(WORTIME0, 0b0000_0000, u8, {
     #[doc = "Low byte of timer value in WOR module"]
-    time @ 0..7,
+    time @ 0..8,
 });
 
 register!(PKTSTATUS, 0b0000_0000, u8, {
@@ -108,29 +108,29 @@ register!(PKTSTATUS, 0b0000_0000, u8, {
 
 register!(VCO_VC_DAC, 0b0000_0000, u8, {
     #[doc = "Status register for test only"]
-    vco_vc_dac @ 0..7,
+    vco_vc_dac @ 0..8,
 });
 
 register!(TXBYTES, 0b0000_0000, u8, {
     #[doc = "TX FIFO underflow"]
     txfifo_underflow @ 7,
     #[doc = "Number of bytes in TX FIFO"]
-    num_txbytes @ 0..6,
+    num_txbytes @ 0..7,
 });
 
 register!(RXBYTES, 0b0000_0000, u8, {
     #[doc = "RX FIFO overflow"]
     rxfifo_overflow @ 7,
     #[doc = "Number of bytes in RX FIFO"]
-    num_rxbytes @ 0..6,
+    num_rxbytes @ 0..7,
 });
 
 register!(RCCTRL1_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
-    rcctrl1_status @ 0..6,
+    rcctrl1_status @ 0..7,
 });
 
 register!(RCCTRL0_STATUS, 0b0000_0000, u8, {
     #[doc = "Contains the value from the last run of the RC oscillator calibration routine"]
-    rcctrl0_status @ 0..6,
+    rcctrl0_status @ 0..7,
 });
