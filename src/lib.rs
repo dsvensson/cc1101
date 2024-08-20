@@ -6,7 +6,7 @@ extern crate embedded_hal as hal;
 extern crate std;
 
 use core::fmt::{self, Display, Formatter};
-use hal::spi::SpiDevice;
+use hal::{digital::PinState, spi::SpiDevice};
 
 #[macro_use]
 pub mod lowlevel;
@@ -40,6 +40,8 @@ pub enum UserError {
     MissingLengthParameter,
     /// Missing Address parameter
     MissingAddressParameter,
+    /// Missing Rx Status parameters
+    MissingRxStatusParameters,
     /// Array too long
     ArrayTooLong(usize),
 }
@@ -63,6 +65,9 @@ impl<SpiE: Display> Display for Error<SpiE> {
                 }
                 UserError::MissingAddressParameter => {
                     write!(f, "User error: Missing address parameter")
+                }
+                UserError::MissingRxStatusParameters => {
+                    write!(f, "User error: Missing Rx status parameters")
                 }
                 UserError::ArrayTooLong(v) => write!(f, "User error: Array too long: {}", v),
             },
@@ -165,6 +170,95 @@ where
     /// Command Strobe: No operation. May be used to get access to the chip status byte
     pub fn no_operation(&mut self) -> Result<(), Error<SpiE>> {
         self.0.write_cmd_strobe(Command::SNOP)?;
+        Ok(())
+    }
+
+    /// Set the GDO0 Output Pin Configuration
+    pub fn set_gdo0_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::IOCFG0, |r| {
+            IOCFG0(r).modify().gdo0_cfg(config.into()).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Set the GDO1 Output Pin Configuration
+    pub fn set_gdo1_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::IOCFG1, |r| {
+            IOCFG1(r).modify().gdo1_cfg(config.into()).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Set the GDO2 Output Pin Configuration
+    pub fn set_gdo2_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::IOCFG2, |r| {
+            IOCFG2(r).modify().gdo2_cfg(config.into()).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Set the GDO0 Active Output State
+    pub fn set_gdo0_active_state(&mut self, state: PinState) -> Result<(), Error<SpiE>> {
+        let value = match state {
+            PinState::Low => 1,
+            PinState::High => 0,
+        };
+
+        // Invert output, i.e. select active low (1) / high (0)
+        self.0.modify_register(Config::IOCFG0, |r| IOCFG0(r).modify().gdo0_inv(value).bits())?;
+        Ok(())
+    }
+
+    /// Set the GDO1 Active Output State
+    pub fn set_gdo1_active_state(&mut self, state: PinState) -> Result<(), Error<SpiE>> {
+        let value = match state {
+            PinState::Low => 1,
+            PinState::High => 0,
+        };
+
+        // Invert output, i.e. select active low (1) / high (0)
+        self.0.modify_register(Config::IOCFG1, |r| IOCFG1(r).modify().gdo1_inv(value).bits())?;
+        Ok(())
+    }
+
+    /// Set the GDO2 Active Output State
+    pub fn set_gdo2_active_state(&mut self, state: PinState) -> Result<(), Error<SpiE>> {
+        let value = match state {
+            PinState::Low => 1,
+            PinState::High => 0,
+        };
+
+        // Invert output, i.e. select active low (1) / high (0)
+        self.0.modify_register(Config::IOCFG2, |r| IOCFG2(r).modify().gdo2_inv(value).bits())?;
+        Ok(())
+    }
+
+    /// Enable analog temperature sensor
+    pub fn temperature_sensor_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        match enable {
+            true => {
+                // Write 0 in all other register bits when using temperature sensor.
+                self.0.write_register(
+                    Config::IOCFG0,
+                    IOCFG0(0).modify().temp_sensor_enable(enable as u8).bits(),
+                )?;
+            }
+            false => {
+                self.0.modify_register(Config::IOCFG0, |r| {
+                    IOCFG0(r).modify().temp_sensor_enable(enable as u8).bits()
+                })?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Set the output drive strength on the GDO pins
+    pub fn set_gdo_drive_strength(&mut self, high_strength: bool) -> Result<(), Error<SpiE>> {
+        // Set high (1) or low (0) output drive strength on the GDO pins.
+        self.0.modify_register(Config::IOCFG1, |r| {
+            IOCFG1(r).modify().gdo1_ds(high_strength as u8).bits()
+        })?;
         Ok(())
     }
 
@@ -301,6 +395,7 @@ where
     /// When enabled, two status bytes will be appended to the payload of the packet.
     /// The status bytes contain RSSI and LQI values, as well as CRC OK.
     pub fn append_status_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.rx_status_fields = enable;
         self.0.modify_register(Config::PKTCTRL1, |r| {
             PKTCTRL1(r).modify().append_status(enable as u8).bits()
         })?;
@@ -432,6 +527,8 @@ where
         &mut self,
         length: &mut Option<u8>,
         address: &mut Option<u8>,
+        rssi: &mut Option<i16>,
+        lqi: &mut Option<u8>,
         data: &mut [u8],
     ) -> Result<(), Error<SpiE>> {
         let num_of_optional_fields = self.0.length_field as usize + self.0.address_field as usize;
@@ -449,6 +546,11 @@ where
             return Err(Error::UserInputError(UserError::MissingAddressParameter));
         }
 
+        // Validate RSSI and LQI parameters
+        if self.0.rx_status_fields && (rssi.is_none() || lqi.is_none()) {
+            return Err(Error::UserInputError(UserError::MissingRxStatusParameters));
+        }
+
         if data.len() <= data_len_max {
             self.0.access_fifo(
                 Access::Read,
@@ -463,6 +565,15 @@ where
 
             if self.0.address_field {
                 *address = Some(optional_fields[index]);
+            }
+
+            if self.0.rx_status_fields {
+                *rssi = Some(from_rssi_to_rssi_dbm(data[data.len() - 2]));
+                *lqi = Some(data[data.len() - 1]);
+
+                // Overwrite the last 2 bytes with `0` for the user to avoid confusion with data handling
+                data[data.len() - 2] = 0;
+                data[data.len() - 1] = 0;
             }
         } else {
             return Err(Error::UserInputError(UserError::ArrayTooLong(data.len())));
@@ -513,6 +624,15 @@ where
         Ok(())
     }
 
+    /// ------------------------------------------------------------------------
+    /// TODO: The functions bellow shall be discontinued in the future.
+    /// 1.  await_machine_state() is a blocking function
+    /// 2.  set_defaults() was written with specific application in mind
+    /// 3.  set_radio_mode() depends on await_machine_state which is blocking
+    /// 4.  receive() was written with specific application in mind
+    /// 5.  set_raw_mode() was written with specific application in mind
+    /// ------------------------------------------------------------------------
+
     fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
         loop {
             let machine_state = self.get_machine_state()?;
@@ -528,9 +648,7 @@ where
     pub fn set_defaults(&mut self) -> Result<(), Error<SpiE>> {
         self.reset_chip()?;
 
-        self.0.write_register(Config::PKTCTRL0, PKTCTRL0::default()
-            .white_data(0).bits()
-        )?;
+        self.white_data_enable(false)?;
 
         self.set_freq_if(203_125)?;
 
@@ -601,7 +719,9 @@ where
             Ok(_nbytes) => {
                 let mut length: Option<u8> = Some(0);
                 let mut address: Option<u8> = Some(0);
-                self.read_data(&mut length, &mut address, buf)?;
+                let mut rssi: Option<i16> = Some(0);
+                let mut lqi: Option<u8> = Some(0);
+                self.read_data(&mut length, &mut address, &mut rssi, &mut lqi, buf)?;
                 *addr = address.unwrap();
                 let lqi = self.0.read_register(Status::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
@@ -622,7 +742,7 @@ where
     /// Configures raw data to be passed through, without any packet handling.
     pub fn set_raw_mode(&mut self) -> Result<(), Error<SpiE>> {
         // Serial data output.
-        self.0.write_register(Config::IOCFG0, 0x0d)?;
+        self.set_gdo0_config(GdoCfg::SERIAL_DATA_OUT)?;
         // Disable data whitening and CRC, fixed packet length, asynchronous serial mode.
         self.0.write_register(Config::PKTCTRL0, 0x30)?;
         Ok(())
