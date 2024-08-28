@@ -22,8 +22,7 @@ pub struct Cc1101<SPI> {
     pub status: Option<StatusByte>,
     pub length_field: bool,
     pub address_field: bool,
-    // gdo0: GDO0,
-    // gdo2: GDO2,
+    pub rx_status_fields: bool,
 }
 
 impl<SPI, SpiE> Cc1101<SPI>
@@ -36,6 +35,7 @@ where
             status: None,
             length_field: false,
             address_field: false,
+            rx_status_fields: true,
         };
         Ok(cc1101)
     }
