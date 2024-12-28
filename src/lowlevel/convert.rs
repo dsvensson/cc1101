@@ -7,7 +7,7 @@ pub const fn from_frequency(hz: u64) -> (u8, u8, u8) {
     let freq = hz * 1u64.rotate_left(16) / FXOSC;
     let freq0 = (freq & 0xff) as u8;
     let freq1 = ((freq >> 8) & 0xff) as u8;
-    let freq2 = ((freq >> 16) & 0xff) as u8;
+    let freq2 = ((freq >> 16) & 0x3f) as u8;
     (freq0, freq1, freq2)
 }
 
