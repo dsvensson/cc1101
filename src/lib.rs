@@ -264,6 +264,12 @@ where
 
     /// Sets the carrier frequency (in Hertz).
     pub fn set_frequency(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
+        // Before altering any frequency programming register we
+        // must stop the frequency synthesizer by going to Idle mode.
+        // See section 21 "Frequency Programming" of the data sheet
+        // (TI document SWRS061I).
+        self.set_radio_mode(RadioMode::Idle)?;
+
         let (freq0, freq1, freq2) = from_frequency(hz);
         self.0.write_register(Config::FREQ0, freq0)?;
         self.0.write_register(Config::FREQ1, freq1)?;
