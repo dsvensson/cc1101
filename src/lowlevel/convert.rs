@@ -65,7 +65,12 @@ mod tests {
 
     #[test]
     fn test_frequency() {
+        // (0x10a762 * 26_000_000 / 2**16) == 432_999_816.9
         assert_eq!(from_frequency(433_000_000), (0x62, 0xA7, 0x10));
+
+        // (0x10b071 * 26_000_000 / 2**16) == 433_919_830.3
+        assert_eq!(from_frequency(433_920_000), (0x71, 0xb0, 0x10));
+
         assert_eq!(from_frequency(868_000_000), (0x76, 0x62, 0x21));
         assert_eq!(from_frequency(902_000_000), (0x3B, 0xB1, 0x22));
         assert_eq!(from_frequency(918_000_000), (0xC4, 0x4E, 0x23));
