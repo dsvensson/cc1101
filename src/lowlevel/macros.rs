@@ -37,6 +37,12 @@ macro_rules! register {
         }
 
         impl $REGISTER<crate::lowlevel::traits::R> {
+            /// Current value of the register as raw bits.
+            pub fn bits(self) -> $uxx {
+                self.bits
+            }
+
+            /// Make a writable copy of the register value.
             pub fn modify(self) -> $REGISTER<crate::lowlevel::traits::W> {
                 $REGISTER { bits: self.bits, _mode: ::core::marker::PhantomData }
             }
@@ -56,6 +62,7 @@ macro_rules! register {
         }
 
         impl $REGISTER<crate::lowlevel::traits::W> {
+            /// Current value of the register as raw bits.
             pub fn bits(self) -> $uxx {
                 self.bits
             }
