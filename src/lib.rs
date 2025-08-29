@@ -309,7 +309,7 @@ where
     }
 
     /// Set Modem deviation setting.
-    pub fn set_deviation(&mut self, deviation: u64) -> Result<(), Error<SpiE>> {
+    pub fn set_deviation_hz(&mut self, deviation: u64) -> Result<(), Error<SpiE>> {
         let (mantissa, exponent) = from_deviation(deviation);
         self.0.write_register(
             Config::DEVIATN,
@@ -352,8 +352,8 @@ where
     }
 
     /// Sets the channel bandwidth (in Hertz).
-    pub fn set_chanbw(&mut self, bandwidth: u64) -> Result<(), Error<SpiE>> {
-        let (mantissa, exponent) = from_chanbw(bandwidth);
+    pub fn set_channel_bandwidth(&mut self, bandwidth_hz: u64) -> Result<(), Error<SpiE>> {
+        let (mantissa, exponent) = from_chanbw(bandwidth_hz);
         self.0.modify_register(Config::MDMCFG4, |r| {
             MDMCFG4(r).modify().chanbw_m(mantissa).chanbw_e(exponent).bits()
         })?;
@@ -366,15 +366,28 @@ where
 
         let (mode, word) = match sync_mode {
             SyncMode::Disabled => (SyncCheck::DISABLED, reset),
-            SyncMode::MatchPartial(word) => (SyncCheck::CHECK_15_16, word),
-            SyncMode::MatchPartialRepeated(word) => (SyncCheck::CHECK_30_32, word),
-            SyncMode::MatchFull(word) => (SyncCheck::CHECK_16_16, word),
+            SyncMode::Match15of16(w) => (SyncCheck::CHECK_15_16, w),
+            SyncMode::Match16of16(w) => (SyncCheck::CHECK_16_16, w),
+            SyncMode::Match30of32(w) => (SyncCheck::CHECK_30_32, w),
+            SyncMode::CarrierSenseOnly => (SyncCheck::CHECK_0_0_CS, reset),
+            SyncMode::Match15of16Cs(w) => (SyncCheck::CHECK_15_16_CS, w),
+            SyncMode::Match16of16Cs(w) => (SyncCheck::CHECK_16_16_CS, w),
+            SyncMode::Match30of32Cs(w) => (SyncCheck::CHECK_30_32_CS, w),
         };
+
         self.0.modify_register(Config::MDMCFG2, |r| {
             MDMCFG2(r).modify().sync_mode(mode.into()).bits()
         })?;
         self.0.write_register(Config::SYNC1, ((word >> 8) & 0xff) as u8)?;
         self.0.write_register(Config::SYNC0, (word & 0xff) as u8)?;
+        Ok(())
+    }
+
+    /// Sets the Manchester encoding mode.
+    pub fn set_manchester_encoding(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::MDMCFG2, |r| {
+            MDMCFG2(r).modify().manchester_en(enable as u8).bits()
+        })?;
         Ok(())
     }
 
