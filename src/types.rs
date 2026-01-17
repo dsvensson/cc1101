@@ -35,12 +35,20 @@ pub enum AddressFilter {
 /// Sync word configuration.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum SyncMode {
-    /// No sync word.
+    /// No sync word, no carrier sense.
     Disabled,
-    /// Match 15 of 16 bits of given sync word.
-    MatchPartial(u16),
-    /// Match 30 of 32 bits of a repetition of given sync word.
-    MatchPartialRepeated(u16),
-    /// Match 16 of 16 bits of given sync word.
-    MatchFull(u16),
+    /// Require 15 of 16 sync bits to match.
+    Match15of16(u16),
+    /// Require all 16 sync bits to match.
+    Match16of16(u16),
+    /// Require 30 of 32 sync bits (two repeated sync words).
+    Match30of32(u16),
+    /// No sync, but require carrier sense above threshold.
+    CarrierSenseOnly,
+    /// 15 of 16 sync bits + carrier sense.
+    Match15of16Cs(u16),
+    /// 16 of 16 sync bits + carrier sense.
+    Match16of16Cs(u16),
+    /// 30 of 32 sync bits + carrier sense.
+    Match30of32Cs(u16),
 }
