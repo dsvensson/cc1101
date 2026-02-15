@@ -1,5 +1,7 @@
 mod address_check;
+mod agc_lna_priority;
 mod auto_calibration;
+mod carrier_sense_relative_threshold;
 mod cca_mode;
 mod fifo_threshold;
 mod filter_length;
@@ -14,7 +16,9 @@ mod sync_check;
 mod target_amplitude;
 
 pub use self::address_check::*;
+pub use self::agc_lna_priority::*;
 pub use self::auto_calibration::*;
+pub use self::carrier_sense_relative_threshold::*;
 pub use self::cca_mode::*;
 pub use self::fifo_threshold::*;
 pub use self::filter_length::*;
