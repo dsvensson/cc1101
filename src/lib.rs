@@ -292,6 +292,22 @@ where
         Ok(())
     }
 
+    /// Sets the maximum allowable DVGA gain.
+    pub fn set_max_dvga_gain(&mut self, gain: MaxDvgaGain) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::AGCCTRL2, |r| {
+            AGCCTRL2(r).modify().max_dvga_gain(gain.into()).bits()
+        })?;
+        Ok(())
+    }
+
+    /// Sets the maximum allowable `LNA + LNA2` gain.
+    pub fn set_max_lna_gain(&mut self, gain: MaxLnaGain) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(Config::AGCCTRL2, |r| {
+            AGCCTRL2(r).modify().max_lna_gain(gain.into()).bits()
+        })?;
+        Ok(())
+    }
+
     /// Sets AGC gain-reduction priority between `LNA` and `LNA2`.
     ///
     /// `AgcLnaPriority::LnaFirst` decreases `LNA` gain first.
@@ -715,7 +731,7 @@ where
         self.set_autocalibration(AutoCalibration::FromIdle)?;
 
         self.0.write_register(Config::AGCCTRL2, AGCCTRL2::default()
-            .max_lna_gain(0x04).bits()
+            .max_lna_gain(MaxLnaGain::BelowMax9_2.into()).bits()
         )?;
 
         Ok(())
