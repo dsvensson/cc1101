@@ -730,9 +730,7 @@ where
 
         self.set_autocalibration(AutoCalibration::FromIdle)?;
 
-        self.0.write_register(Config::AGCCTRL2, AGCCTRL2::default()
-            .max_lna_gain(MaxLnaGain::BelowMax9_2.into()).bits()
-        )?;
+        self.set_max_lna_gain(MaxLnaGain::BelowMax9_2)?;
 
         Ok(())
     }
