@@ -38,6 +38,8 @@ impl From<u8> for State {
 }
 
 /// Table 23: Status Byte
+///
+/// Returned on MISO during the header byte of every SPI access.
 #[derive(Default, Clone, Copy)]
 pub struct StatusByte {
     pub chip_rdy: bool,
@@ -45,18 +47,7 @@ pub struct StatusByte {
     pub fifo_bytes_available: u8,
 }
 
-impl From<u8> for StatusByte {
-    fn from(value: u8) -> Self {
-        let status_byte = STATUS_BYTE(value);
-        StatusByte {
-            chip_rdy: (status_byte.chip_rdyn() == 0),
-            state: State::from(status_byte.state()),
-            fifo_bytes_available: status_byte.fifo_bytes_available(),
-        }
-    }
-}
-
-register!(STATUS_BYTE, 0b1000_0000, u8, {
+view!(STATUS_BYTE {
     #[doc = "Stays high until power and crystal have stabilized. Should always be low when using the SPI interface."]
     chip_rdyn @ 7,
     #[doc = "Indicates the current main state machine mode"]
@@ -64,3 +55,14 @@ register!(STATUS_BYTE, 0b1000_0000, u8, {
     #[doc = "The number of bytes available in the RX FIFO or free bytes in the TX FIFO"]
     fifo_bytes_available @ 0..4,
 });
+
+impl From<u8> for StatusByte {
+    fn from(value: u8) -> Self {
+        let status_byte = STATUS_BYTE(value);
+        StatusByte {
+            chip_rdy: status_byte.chip_rdyn() == 0,
+            state: State::from(status_byte.state()),
+            fifo_bytes_available: status_byte.fifo_bytes_available(),
+        }
+    }
+}

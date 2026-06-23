@@ -37,11 +37,10 @@ impl ToWider for u8 {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Mask;
-
+/// Marker for the read view of a register (exposes field getters).
 #[derive(Clone, Copy)]
 pub struct R;
 
+/// Marker for the write view of a register (exposes field setters).
 #[derive(Clone, Copy)]
 pub struct W;
