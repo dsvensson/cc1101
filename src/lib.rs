@@ -97,103 +97,97 @@ where
 
     /// Command Strobe: Reset chip
     pub fn reset_chip(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SRES)?;
+        self.0.strobe(command::SRES)?;
         Ok(())
     }
 
     /// Command Strobe: Enable and calibrate frequency synthesizer
     pub fn enable_and_cal_freq_synth(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SFSTXON)?;
+        self.0.strobe(command::SFSTXON)?;
         Ok(())
     }
 
     /// Command Strobe: Turn off crystal oscillator
     pub fn turn_off_xosc(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SXOFF)?;
+        self.0.strobe(command::SXOFF)?;
         Ok(())
     }
 
     /// Command Strobe: Calibrate frequency synthesizer and turn it off
     pub fn cal_freq_synth_and_turn_off(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SCAL)?;
+        self.0.strobe(command::SCAL)?;
         Ok(())
     }
 
     /// Command Strobe: Enable RX
     pub fn enable_rx(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SRX)?;
+        self.0.strobe(command::SRX)?;
         Ok(())
     }
 
     /// Command Strobe: Enable TX
     pub fn enable_tx(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::STX)?;
+        self.0.strobe(command::STX)?;
         Ok(())
     }
 
     /// Command Strobe: Exit RX / TX, turn off frequency synthesizer
     pub fn exit_rx_tx(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SIDLE)?;
+        self.0.strobe(command::SIDLE)?;
         Ok(())
     }
 
     /// Command Strobe: Start automatic RX polling sequence (Wake-on-Radio)
     pub fn start_wake_on_radio(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SWOR)?;
+        self.0.strobe(command::SWOR)?;
         Ok(())
     }
 
     /// Command Strobe: Enter power down mode when CSn goes high
     pub fn enter_power_down_mode(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SPWD)?;
+        self.0.strobe(command::SPWD)?;
         Ok(())
     }
 
     /// Command Strobe: Flush the RX FIFO buffer
     pub fn flush_rx_fifo_buffer(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SFRX)?;
+        self.0.strobe(command::SFRX)?;
         Ok(())
     }
 
     /// Command Strobe: Flush the TX FIFO buffer
     pub fn flush_tx_fifo_buffer(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SFTX)?;
+        self.0.strobe(command::SFTX)?;
         Ok(())
     }
 
     /// Command Strobe: Reset real time clock to Event1 value
     pub fn reset_rtc_to_event1(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SWORRST)?;
+        self.0.strobe(command::SWORRST)?;
         Ok(())
     }
 
     /// Command Strobe: No operation. May be used to get access to the chip status byte
     pub fn no_operation(&mut self) -> Result<(), Error<SpiE>> {
-        self.0.write_cmd_strobe(Command::SNOP)?;
+        self.0.strobe(command::SNOP)?;
         Ok(())
     }
 
     /// Set the GDO0 Output Pin Configuration
     pub fn set_gdo0_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::IOCFG0, |r| {
-            IOCFG0(r).modify().gdo0_cfg(config.into()).bits()
-        })?;
+        self.0.modify_register(config::IOCFG0, |r| r.gdo0_cfg(config.into()))?;
         Ok(())
     }
 
     /// Set the GDO1 Output Pin Configuration
     pub fn set_gdo1_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::IOCFG1, |r| {
-            IOCFG1(r).modify().gdo1_cfg(config.into()).bits()
-        })?;
+        self.0.modify_register(config::IOCFG1, |r| r.gdo1_cfg(config.into()))?;
         Ok(())
     }
 
     /// Set the GDO2 Output Pin Configuration
     pub fn set_gdo2_config(&mut self, config: GdoCfg) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::IOCFG2, |r| {
-            IOCFG2(r).modify().gdo2_cfg(config.into()).bits()
-        })?;
+        self.0.modify_register(config::IOCFG2, |r| r.gdo2_cfg(config.into()))?;
         Ok(())
     }
 
@@ -205,7 +199,7 @@ where
         };
 
         // Invert output, i.e. select active low (1) / high (0)
-        self.0.modify_register(Config::IOCFG0, |r| IOCFG0(r).modify().gdo0_inv(value).bits())?;
+        self.0.modify_register(config::IOCFG0, |r| r.gdo0_inv(value))?;
         Ok(())
     }
 
@@ -217,7 +211,7 @@ where
         };
 
         // Invert output, i.e. select active low (1) / high (0)
-        self.0.modify_register(Config::IOCFG1, |r| IOCFG1(r).modify().gdo1_inv(value).bits())?;
+        self.0.modify_register(config::IOCFG1, |r| r.gdo1_inv(value))?;
         Ok(())
     }
 
@@ -229,7 +223,7 @@ where
         };
 
         // Invert output, i.e. select active low (1) / high (0)
-        self.0.modify_register(Config::IOCFG2, |r| IOCFG2(r).modify().gdo2_inv(value).bits())?;
+        self.0.modify_register(config::IOCFG2, |r| r.gdo2_inv(value))?;
         Ok(())
     }
 
@@ -238,15 +232,12 @@ where
         match enable {
             true => {
                 // Write 0 in all other register bits when using temperature sensor.
-                self.0.write_register(
-                    Config::IOCFG0,
-                    IOCFG0(0).modify().temp_sensor_enable(enable as u8).bits(),
-                )?;
+                self.0.write_register(config::IOCFG0, |w| {
+                    w.temp_sensor_enable(enable as u8).gdo0_inv(0).gdo0_cfg(0)
+                })?;
             }
             false => {
-                self.0.modify_register(Config::IOCFG0, |r| {
-                    IOCFG0(r).modify().temp_sensor_enable(enable as u8).bits()
-                })?;
+                self.0.modify_register(config::IOCFG0, |r| r.temp_sensor_enable(enable as u8))?;
             }
         }
 
@@ -256,9 +247,7 @@ where
     /// Set the output drive strength on the GDO pins
     pub fn set_gdo_drive_strength(&mut self, high_strength: bool) -> Result<(), Error<SpiE>> {
         // Set high (1) or low (0) output drive strength on the GDO pins.
-        self.0.modify_register(Config::IOCFG1, |r| {
-            IOCFG1(r).modify().gdo1_ds(high_strength as u8).bits()
-        })?;
+        self.0.modify_register(config::IOCFG1, |r| r.gdo1_ds(high_strength as u8))?;
         Ok(())
     }
 
@@ -271,40 +260,33 @@ where
         self.set_radio_mode(RadioMode::Idle)?;
 
         let (freq0, freq1, freq2) = from_frequency(hz);
-        self.0.write_register(Config::FREQ0, freq0)?;
-        self.0.write_register(Config::FREQ1, freq1)?;
-        self.0.write_register(Config::FREQ2, freq2)?;
+        self.0.write_register(config::FREQ0, |w| w.freq(freq0))?;
+        self.0.write_register(config::FREQ1, |w| w.freq(freq1))?;
+        self.0.write_register(config::FREQ2, |w| w.freq(freq2))?;
         Ok(())
     }
 
     /// Sets the frequency synthesizer intermediate frequency (in Hertz).
     pub fn set_freq_if(&mut self, hz: u64) -> Result<(), Error<SpiE>> {
-        self.0
-            .write_register(Config::FSCTRL1, FSCTRL1::default().freq_if(from_freq_if(hz)).bits())?;
+        self.0.write_register(config::FSCTRL1, |w| w.freq_if(from_freq_if(hz)))?;
         Ok(())
     }
 
     /// Sets the target value for the averaged amplitude from the digital channel filter.
     pub fn set_magn_target(&mut self, target: TargetAmplitude) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL2, |r| {
-            AGCCTRL2(r).modify().magn_target(target.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL2, |r| r.magn_target(target.into()))?;
         Ok(())
     }
 
     /// Sets the maximum allowable DVGA gain.
     pub fn set_max_dvga_gain(&mut self, gain: MaxDvgaGain) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL2, |r| {
-            AGCCTRL2(r).modify().max_dvga_gain(gain.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL2, |r| r.max_dvga_gain(gain.into()))?;
         Ok(())
     }
 
     /// Sets the maximum allowable `LNA + LNA2` gain.
     pub fn set_max_lna_gain(&mut self, gain: MaxLnaGain) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL2, |r| {
-            AGCCTRL2(r).modify().max_lna_gain(gain.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL2, |r| r.max_lna_gain(gain.into()))?;
         Ok(())
     }
 
@@ -313,9 +295,7 @@ where
     /// `AgcLnaPriority::LnaFirst` decreases `LNA` gain first.
     /// `AgcLnaPriority::Lna2First` decreases `LNA2` gain to minimum first.
     pub fn set_agc_lna_priority(&mut self, priority: AgcLnaPriority) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL1, |r| {
-            AGCCTRL1(r).modify().agc_lna_priority(priority.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL1, |r| r.agc_lna_priority(priority.into()))?;
         Ok(())
     }
 
@@ -324,9 +304,7 @@ where
         &mut self,
         threshold: CarrierSenseRelativeThreshold,
     ) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL1, |r| {
-            AGCCTRL1(r).modify().carrier_sense_rel_thr(threshold.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL1, |r| r.carrier_sense_rel_thr(threshold.into()))?;
         Ok(())
     }
 
@@ -339,83 +317,66 @@ where
     /// - `0b1001..=0b1111` (`-7..=-1`): 7 dB to 1 dB below `MAGN_TARGET`
     /// - `0b0000..=0b0111` (`0..=7`): at `MAGN_TARGET` up to 7 dB above it
     pub fn set_carrier_sense_threshold(&mut self, threshold: u8) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL1, |r| {
-            AGCCTRL1(r).modify().carrier_sense_abs_thr(threshold.min(15)).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL1, |r| r.carrier_sense_abs_thr(threshold.min(15)))?;
         Ok(())
     }
 
     /// Sets the filter length (in FSK/MSK mode) or decision boundary (in OOK/ASK mode) for the AGC.
     pub fn set_filter_length(&mut self, filter_length: FilterLength) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::AGCCTRL0, |r| {
-            AGCCTRL0(r).modify().filter_length(filter_length.into()).bits()
-        })?;
+        self.0.modify_register(config::AGCCTRL0, |r| r.filter_length(filter_length.into()))?;
         Ok(())
     }
 
     /// Configures when to run automatic calibration.
     pub fn set_autocalibration(&mut self, autocal: AutoCalibration) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MCSM0, |r| {
-            MCSM0(r).modify().fs_autocal(autocal.into()).bits()
-        })?;
+        self.0.modify_register(config::MCSM0, |r| r.fs_autocal(autocal.into()))?;
         Ok(())
     }
 
     /// Set Modem deviation setting.
     pub fn set_deviation_hz(&mut self, deviation: u64) -> Result<(), Error<SpiE>> {
         let (mantissa, exponent) = from_deviation(deviation);
-        self.0.write_register(
-            Config::DEVIATN,
-            DEVIATN::default().deviation_m(mantissa).deviation_e(exponent).bits(),
-        )?;
+        self.0
+            .write_register(config::DEVIATN, |w| w.deviation_m(mantissa).deviation_e(exponent))?;
         Ok(())
     }
 
     /// Sets the data rate (in bits per second).
     pub fn set_data_rate(&mut self, baud: u64) -> Result<(), Error<SpiE>> {
         let (mantissa, exponent) = from_drate(baud);
-        self.0
-            .modify_register(Config::MDMCFG4, |r| MDMCFG4(r).modify().drate_e(exponent).bits())?;
-        self.0.write_register(Config::MDMCFG3, MDMCFG3::default().drate_m(mantissa).bits())?;
+        self.0.modify_register(config::MDMCFG4, |r| r.drate_e(exponent))?;
+        self.0.write_register(config::MDMCFG3, |w| w.drate_m(mantissa))?;
         Ok(())
     }
 
     /// Enable Forward Error Correction (FEC) with interleaving for packet payload
     pub fn fec_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MDMCFG1, |r| {
-            MDMCFG1(r).modify().fec_en(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::MDMCFG1, |r| r.fec_en(enable as u8))?;
         Ok(())
     }
 
     /// Sets the minimum number of preamble bytes to be transmitted
     pub fn set_num_preamble(&mut self, num_preamble: NumPreamble) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MDMCFG1, |r| {
-            MDMCFG1(r).modify().num_preamble(num_preamble.into()).bits()
-        })?;
+        self.0.modify_register(config::MDMCFG1, |r| r.num_preamble(num_preamble.into()))?;
         Ok(())
     }
 
     /// Selects CCA_MODE; Reflected in CCA signal.
     pub fn set_cca_mode(&mut self, cca_mode: CcaMode) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MCSM1, |r| {
-            MCSM1(r).modify().cca_mode(cca_mode.into()).bits()
-        })?;
+        self.0.modify_register(config::MCSM1, |r| r.cca_mode(cca_mode.into()))?;
         Ok(())
     }
 
     /// Sets the channel bandwidth (in Hertz).
     pub fn set_channel_bandwidth(&mut self, bandwidth_hz: u64) -> Result<(), Error<SpiE>> {
         let (mantissa, exponent) = from_chanbw(bandwidth_hz);
-        self.0.modify_register(Config::MDMCFG4, |r| {
-            MDMCFG4(r).modify().chanbw_m(mantissa).chanbw_e(exponent).bits()
-        })?;
+        self.0.modify_register(config::MDMCFG4, |r| r.chanbw_m(mantissa).chanbw_e(exponent))?;
         Ok(())
     }
 
     /// Configure the sync word to use, and at what level it should be verified.
     pub fn set_sync_mode(&mut self, sync_mode: SyncMode) -> Result<(), Error<SpiE>> {
-        let reset: u16 = (SYNC1::default().bits() as u16) << 8 | (SYNC0::default().bits() as u16);
+        let reset: u16 = 0xD391; // SYNC1/SYNC0 reset (default sync word)
 
         let (mode, word) = match sync_mode {
             SyncMode::Disabled => (SyncCheck::DISABLED, reset),
@@ -428,19 +389,15 @@ where
             SyncMode::Match30of32Cs(w) => (SyncCheck::CHECK_30_32_CS, w),
         };
 
-        self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().sync_mode(mode.into()).bits()
-        })?;
-        self.0.write_register(Config::SYNC1, ((word >> 8) & 0xff) as u8)?;
-        self.0.write_register(Config::SYNC0, (word & 0xff) as u8)?;
+        self.0.modify_register(config::MDMCFG2, |r| r.sync_mode(mode.into()))?;
+        self.0.write_register(config::SYNC1, |w| w.sync(((word >> 8) & 0xff) as u8))?;
+        self.0.write_register(config::SYNC0, |w| w.sync((word & 0xff) as u8))?;
         Ok(())
     }
 
     /// Sets the Manchester encoding mode.
     pub fn set_manchester_encoding(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().manchester_en(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::MDMCFG2, |r| r.manchester_en(enable as u8))?;
         Ok(())
     }
 
@@ -449,18 +406,14 @@ where
         &mut self,
         mod_format: ModulationFormat,
     ) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::MDMCFG2, |r| {
-            MDMCFG2(r).modify().mod_format(mod_format.into()).bits()
-        })?;
+        self.0.modify_register(config::MDMCFG2, |r| r.mod_format(mod_format.into()))?;
         Ok(())
     }
 
     /// Enable automatic flush of RX FIFO when CRC is not OK.
     /// This requires that only one packet is in the RX FIFO and that packet length is limited to the RX FIFO size.
     pub fn crc_autoflush_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::PKTCTRL1, |r| {
-            PKTCTRL1(r).modify().crc_autoflush(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::PKTCTRL1, |r| r.crc_autoflush(enable as u8))?;
         Ok(())
     }
 
@@ -468,9 +421,7 @@ where
     /// The status bytes contain RSSI and LQI values, as well as CRC OK.
     pub fn append_status_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
         self.0.rx_status_fields = enable;
-        self.0.modify_register(Config::PKTCTRL1, |r| {
-            PKTCTRL1(r).modify().append_status(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::PKTCTRL1, |r| r.append_status(enable as u8))?;
         Ok(())
     }
 
@@ -480,7 +431,7 @@ where
         let (mode, addr) = match filter {
             AddressFilter::Disabled => {
                 self.0.address_field = false;
-                (AddressCheck::DISABLED, ADDR::default().bits())
+                (AddressCheck::DISABLED, 0)
             }
             AddressFilter::Device(addr) => (AddressCheck::SELF, addr),
             AddressFilter::DeviceLowBroadcast(addr) => (AddressCheck::SELF_LOW_BROADCAST, addr),
@@ -488,26 +439,20 @@ where
                 (AddressCheck::SELF_HIGH_LOW_BROADCAST, addr)
             }
         };
-        self.0.modify_register(Config::PKTCTRL1, |r| {
-            PKTCTRL1(r).modify().adr_chk(mode.into()).bits()
-        })?;
-        self.0.write_register(Config::ADDR, addr)?;
+        self.0.modify_register(config::PKTCTRL1, |r| r.adr_chk(mode.into()))?;
+        self.0.write_register(config::ADDR, |w| w.device_addr(addr))?;
         Ok(())
     }
 
     /// Turn data whitening on / off.
     pub fn white_data_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::PKTCTRL0, |r| {
-            PKTCTRL0(r).modify().white_data(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::PKTCTRL0, |r| r.white_data(enable as u8))?;
         Ok(())
     }
 
     /// Enable CRC calculation in TX and CRC check in RX
     pub fn crc_enable(&mut self, enable: bool) -> Result<(), Error<SpiE>> {
-        self.0.modify_register(Config::PKTCTRL0, |r| {
-            PKTCTRL0(r).modify().crc_en(enable as u8).bits()
-        })?;
+        self.0.modify_register(config::PKTCTRL0, |r| r.crc_en(enable as u8))?;
         Ok(())
     }
 
@@ -519,19 +464,23 @@ where
                 self.0.length_field = true;
                 (LengthConfig::VARIABLE, max_limit)
             }
-            PacketLength::Infinite => (LengthConfig::INFINITE, PKTLEN::default().bits()),
+            PacketLength::Infinite => (LengthConfig::INFINITE, 0xFF), // PKTLEN reset (max)
         };
-        self.0.modify_register(Config::PKTCTRL0, |r| {
-            PKTCTRL0(r).modify().length_config(format.into()).bits()
-        })?;
-        self.0.write_register(Config::PKTLEN, pktlen)?;
+        self.0.modify_register(config::PKTCTRL0, |r| r.length_config(format.into()))?;
+        self.0.write_register(config::PKTLEN, |w| w.packet_length(pktlen))?;
+        Ok(())
+    }
+
+    /// Set the format of RX and TX data.
+    pub fn set_packet_format(&mut self, format: PacketFormat) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(config::PKTCTRL0, |r| r.pkt_format(format.into()))?;
         Ok(())
     }
 
     /// Read hardware information: part number for CC1101 and current version number
     pub fn get_hw_info(&mut self) -> Result<(u8, u8), Error<SpiE>> {
-        let partnum = self.0.read_register(Status::PARTNUM)?;
-        let version = self.0.read_register(Status::VERSION)?;
+        let partnum = self.0.read_register(status::PARTNUM)?.partnum();
+        let version = self.0.read_register(status::VERSION)?.version();
         Ok((partnum, version))
     }
 
@@ -539,25 +488,25 @@ where
     /// Frequency offset compensation is only supported for 2-FSK, GFSK, 4-FSK, and MSK modulation.
     /// This register will read 0 when using ASK or OOK modulation.
     pub fn get_est_freq_offset(&mut self) -> Result<i32, Error<SpiE>> {
-        Ok(to_frequency_offset(self.0.read_register(Status::FREQEST)?))
+        Ok(to_frequency_offset(self.0.read_register(status::FREQEST)?.freqoff_est()))
     }
 
     /// Read Link Quality Indicator.
     /// Note: Register field LQI.CRC_OK is ignored in this read because it's available also in the PKTSTATUS.CRC_OK register field.
     pub fn get_lqi(&mut self) -> Result<u8, Error<SpiE>> {
-        Ok(LQI(self.0.read_register(Status::LQI)?).lqi())
+        Ok(self.0.read_register(status::LQI)?.lqi())
     }
 
     /// Received Signal Strength Indicator is an estimate of the signal power level in the chosen channel.
     pub fn get_rssi_dbm(&mut self) -> Result<i16, Error<SpiE>> {
-        Ok(from_rssi_to_rssi_dbm(self.0.read_register(Status::RSSI)?))
+        Ok(from_rssi_to_rssi_dbm(self.0.read_register(status::RSSI)?.rssi()))
     }
 
     /// Read the Machine State
     pub fn get_machine_state(&mut self) -> Result<MachineState, Error<SpiE>> {
-        let marcstate = MARCSTATE(self.0.read_register(Status::MARCSTATE)?);
+        let marc_state = self.0.read_register(status::MARCSTATE)?.marc_state();
 
-        match MachineState::try_from(marcstate.marc_state()) {
+        match MachineState::try_from(marc_state) {
             Ok(state) => Ok(state),
             Err(e) => match e {
                 MachineStateError::InvalidState(value) => Err(Error::InvalidState(value)),
@@ -567,12 +516,12 @@ where
 
     /// Read the Current GDOx Status and Packet Status
     pub fn get_packet_status(&mut self) -> Result<PacketStatus, Error<SpiE>> {
-        Ok(PKTSTATUS(self.0.read_register(Status::PKTSTATUS)?).into())
+        Ok(self.0.read_register(status::PKTSTATUS)?.into())
     }
 
     /// Read number of bytes in TX FIFO
     pub fn get_tx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
-        let txbytes = TXBYTES(self.0.read_register(Status::TXBYTES)?);
+        let txbytes = self.0.read_register(status::TXBYTES)?;
         let num_txbytes: u8 = txbytes.num_txbytes();
 
         if txbytes.txfifo_underflow() != 0 {
@@ -584,7 +533,7 @@ where
 
     /// Read number of bytes in RX FIFO
     pub fn get_rx_bytes(&mut self) -> Result<u8, Error<SpiE>> {
-        let rxbytes = RXBYTES(self.0.read_register(Status::RXBYTES)?);
+        let rxbytes = self.0.read_register(status::RXBYTES)?;
         let num_rxbytes: u8 = rxbytes.num_rxbytes();
 
         if rxbytes.rxfifo_overflow() != 0 {
@@ -702,7 +651,6 @@ where
     /// 2.  set_defaults() was written with specific application in mind
     /// 3.  set_radio_mode() depends on await_machine_state which is blocking
     /// 4.  receive() was written with specific application in mind
-    /// 5.  set_raw_mode() was written with specific application in mind
     /// ------------------------------------------------------------------------
 
     fn await_machine_state(&mut self, target_state: MachineState) -> Result<(), Error<SpiE>> {
@@ -724,9 +672,7 @@ where
 
         self.set_freq_if(203_125)?;
 
-        self.0.write_register(Config::MDMCFG2, MDMCFG2::default()
-            .dem_dcfilt_off(1).bits()
-        )?;
+        self.0.write_register(config::MDMCFG2, |w| w.dem_dcfilt_off(1))?;
 
         self.set_autocalibration(AutoCalibration::FromIdle)?;
 
@@ -793,10 +739,10 @@ where
                 let mut lqi: Option<u8> = Some(0);
                 self.read_data(&mut length, &mut address, &mut rssi, &mut lqi, buf)?;
                 *addr = address.unwrap();
-                let lqi = self.0.read_register(Status::LQI)?;
+                let lqi = self.0.read_register(status::LQI)?;
                 self.await_machine_state(MachineState::IDLE)?;
                 self.flush_rx_fifo_buffer()?;
-                if (lqi >> 7) != 1 {
+                if lqi.crc_ok() != 1 {
                     Err(Error::CrcMismatch)
                 } else {
                     Ok(length.unwrap())
@@ -807,14 +753,5 @@ where
                 Err(err)
             }
         }
-    }
-
-    /// Configures raw data to be passed through, without any packet handling.
-    pub fn set_raw_mode(&mut self) -> Result<(), Error<SpiE>> {
-        // Serial data output.
-        self.set_gdo0_config(GdoCfg::SERIAL_DATA_OUT)?;
-        // Disable data whitening and CRC, fixed packet length, asynchronous serial mode.
-        self.0.write_register(Config::PKTCTRL0, 0x30)?;
-        Ok(())
     }
 }
