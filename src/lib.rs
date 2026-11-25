@@ -327,6 +327,32 @@ where
         Ok(())
     }
 
+    /// Writes the power amplifier table, `PATABLE`, starting at index 0.
+    ///
+    /// The table holds up to 8 PA settings; a longer slice is truncated to the first 8.
+    /// Which entries are used is set with [`set_pa_power`](Self::set_pa_power). In ASK/OOK,
+    /// index 0 is the power for a `0` and index `PA_POWER` the power for a `1`, so on-off
+    /// keying needs at least two entries, e.g. `[0x00, power]` with `set_pa_power(1)`.
+    ///
+    /// The values depend on the frequency band; see the PA table in the datasheet or TI's
+    /// DN013. Everything but index 0 is lost in the SLEEP state.
+    pub fn set_pa_table(&mut self, table: &[u8]) -> Result<(), Error<SpiE>> {
+        let len = table.len().min(8);
+        self.0.write_burst(multi::PATABLE, &table[..len])?;
+        Ok(())
+    }
+
+    /// Sets `FREND0.PA_POWER`, the `PATABLE` index used when transmitting.
+    ///
+    /// In ASK/OOK this is the entry used for a `1` (index 0 is used for a `0`), and the
+    /// entries from 0 up to it shape the ramp between the two. In every modulation format
+    /// they also ramp the PA up and down at the start and end of a transmission. Values
+    /// above 7 are clamped to 7.
+    pub fn set_pa_power(&mut self, index: u8) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(config::FREND0, |r| r.pa_power(index.min(7)))?;
+        Ok(())
+    }
+
     /// Configures when to run automatic calibration.
     pub fn set_autocalibration(&mut self, autocal: AutoCalibration) -> Result<(), Error<SpiE>> {
         self.0.modify_register(config::MCSM0, |r| r.fs_autocal(autocal.into()))?;
