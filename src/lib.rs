@@ -517,6 +517,24 @@ where
         Ok(to_frequency_offset(self.0.read_register(status::FREQEST)?.freqoff_est()))
     }
 
+    /// Sets the frequency synthesizer calibration configuration: `FSCAL3[7:6]` and
+    /// `FSCAL0[6:0]`.
+    ///
+    /// The datasheet gives no values for these and defers to SmartRF Studio, whose
+    /// settings differ from the reset values (`FSCAL3[7:6]` = 3 and `FSCAL0` = `0x1F`
+    /// for most configurations, against reset 2 and `0x0D`). The reset values are
+    /// enough inside the supported bands but not necessarily outside them. Takes effect
+    /// at the next calibration.
+    pub fn set_synth_calibration_config(
+        &mut self,
+        fscal3_config: u8,
+        fscal0: u8,
+    ) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(config::FSCAL3, |r| r.fscal3(fscal3_config.min(3)))?;
+        self.0.write_register(config::FSCAL0, |w| w.fscal0(fscal0.min(0x7F)))?;
+        Ok(())
+    }
+
     /// Read the frequency synthesizer calibration result.
     ///
     /// Valid after a calibration has run, e.g. once the chip has reached RX or TX with
