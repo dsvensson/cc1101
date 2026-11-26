@@ -327,6 +327,32 @@ where
         Ok(())
     }
 
+    /// Writes the power amplifier table, `PATABLE`, starting at index 0.
+    ///
+    /// The table holds up to 8 PA settings; a longer slice is truncated to the first 8.
+    /// Which entries are used is set with [`set_pa_power`](Self::set_pa_power). In ASK/OOK,
+    /// index 0 is the power for a `0` and index `PA_POWER` the power for a `1`, so on-off
+    /// keying needs at least two entries, e.g. `[0x00, power]` with `set_pa_power(1)`.
+    ///
+    /// The values depend on the frequency band; see the PA table in the datasheet or TI's
+    /// DN013. Everything but index 0 is lost in the SLEEP state.
+    pub fn set_pa_table(&mut self, table: &[u8]) -> Result<(), Error<SpiE>> {
+        let len = table.len().min(8);
+        self.0.write_burst(multi::PATABLE, &table[..len])?;
+        Ok(())
+    }
+
+    /// Sets `FREND0.PA_POWER`, the `PATABLE` index used when transmitting.
+    ///
+    /// In ASK/OOK this is the entry used for a `1` (index 0 is used for a `0`), and the
+    /// entries from 0 up to it shape the ramp between the two. In every modulation format
+    /// they also ramp the PA up and down at the start and end of a transmission. Values
+    /// above 7 are clamped to 7.
+    pub fn set_pa_power(&mut self, index: u8) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(config::FREND0, |r| r.pa_power(index.min(7)))?;
+        Ok(())
+    }
+
     /// Configures when to run automatic calibration.
     pub fn set_autocalibration(&mut self, autocal: AutoCalibration) -> Result<(), Error<SpiE>> {
         self.0.modify_register(config::MCSM0, |r| r.fs_autocal(autocal.into()))?;
@@ -489,6 +515,41 @@ where
     /// This register will read 0 when using ASK or OOK modulation.
     pub fn get_est_freq_offset(&mut self) -> Result<i32, Error<SpiE>> {
         Ok(to_frequency_offset(self.0.read_register(status::FREQEST)?.freqoff_est()))
+    }
+
+    /// Sets the frequency synthesizer calibration configuration: `FSCAL3[7:6]` and
+    /// `FSCAL0[6:0]`.
+    ///
+    /// The datasheet gives no values for these and defers to SmartRF Studio, whose
+    /// settings differ from the reset values (`FSCAL3[7:6]` = 3 and `FSCAL0` = `0x1F`
+    /// for most configurations, against reset 2 and `0x0D`). The reset values are
+    /// enough inside the supported bands but not necessarily outside them. Takes effect
+    /// at the next calibration.
+    pub fn set_synth_calibration_config(
+        &mut self,
+        fscal3_config: u8,
+        fscal0: u8,
+    ) -> Result<(), Error<SpiE>> {
+        self.0.modify_register(config::FSCAL3, |r| r.fscal3(fscal3_config.min(3)))?;
+        self.0.write_register(config::FSCAL0, |w| w.fscal0(fscal0.min(0x7F)))?;
+        Ok(())
+    }
+
+    /// Read the frequency synthesizer calibration result.
+    ///
+    /// Valid after a calibration has run, e.g. once the chip has reached RX or TX with
+    /// automatic calibration enabled. Useful for checking that the synthesizer locked,
+    /// particularly near the edges of the supported frequency bands.
+    pub fn get_synth_calibration(&mut self) -> Result<SynthCalibration, Error<SpiE>> {
+        let fscal2 = self.0.read_register(config::FSCAL2)?;
+        let fscal1 = self.0.read_register(config::FSCAL1)?;
+        let vco_vc_dac = self.0.read_register(status::VCO_VC_DAC)?;
+        Ok(SynthCalibration {
+            vco_core_high: fscal2.vco_core_h_en() != 0,
+            vco_current: fscal2.fscal2(),
+            capacitor_array: fscal1.fscal1(),
+            vco_vc_dac: vco_vc_dac.vco_vc_dac(),
+        })
     }
 
     /// Read Link Quality Indicator.
