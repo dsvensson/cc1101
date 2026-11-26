@@ -52,3 +52,19 @@ pub enum SyncMode {
     /// 30 of 32 sync bits + carrier sense.
     Match30of32Cs(u16),
 }
+
+/// Result of the frequency synthesizer calibration, as the chip last left it.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct SynthCalibration {
+    /// `FSCAL2.VCO_CORE_H_EN`: whether the high VCO core is selected.
+    pub vco_core_high: bool,
+    /// `FSCAL2.FSCAL2`: VCO current calibration result.
+    pub vco_current: u8,
+    /// `FSCAL1.FSCAL1`: capacitor array setting for VCO coarse tuning, 0..=63. A value
+    /// stuck at either end of the range means the VCO could not be tuned to the
+    /// programmed frequency.
+    pub capacitor_array: u8,
+    /// `VCO_VC_DAC`: the VCO control voltage as the synthesizer settled, a test-only
+    /// status register.
+    pub vco_vc_dac: u8,
+}

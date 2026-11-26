@@ -517,6 +517,23 @@ where
         Ok(to_frequency_offset(self.0.read_register(status::FREQEST)?.freqoff_est()))
     }
 
+    /// Read the frequency synthesizer calibration result.
+    ///
+    /// Valid after a calibration has run, e.g. once the chip has reached RX or TX with
+    /// automatic calibration enabled. Useful for checking that the synthesizer locked,
+    /// particularly near the edges of the supported frequency bands.
+    pub fn get_synth_calibration(&mut self) -> Result<SynthCalibration, Error<SpiE>> {
+        let fscal2 = self.0.read_register(config::FSCAL2)?;
+        let fscal1 = self.0.read_register(config::FSCAL1)?;
+        let vco_vc_dac = self.0.read_register(status::VCO_VC_DAC)?;
+        Ok(SynthCalibration {
+            vco_core_high: fscal2.vco_core_h_en() != 0,
+            vco_current: fscal2.fscal2(),
+            capacitor_array: fscal1.fscal1(),
+            vco_vc_dac: vco_vc_dac.vco_vc_dac(),
+        })
+    }
+
     /// Read Link Quality Indicator.
     /// Note: Register field LQI.CRC_OK is ignored in this read because it's available also in the PKTSTATUS.CRC_OK register field.
     pub fn get_lqi(&mut self) -> Result<u8, Error<SpiE>> {
